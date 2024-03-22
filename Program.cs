@@ -26,6 +26,7 @@ using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+Console.WriteLine("builder created");
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
