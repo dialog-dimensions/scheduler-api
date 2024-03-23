@@ -4,11 +4,13 @@ using System.Text;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories;
 using SchedulerApi.DAL.Repositories.Interfaces;
@@ -197,6 +199,34 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler(appBuilder =>
+    {
+        appBuilder.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+
+            var exceptionHandlerFeature = context.Features.Get<IExceptionHandlerFeature>();
+            if (exceptionHandlerFeature != null)
+            {
+                var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                logger.LogError($"Something went wrong: {exceptionHandlerFeature.Error}");
+
+                await context.Response.WriteAsJsonAsync(new ErrorDetails
+                {
+                    StatusCode = context.Response.StatusCode,
+                    Message = "An unexpected error occurred."
+                });
+            }
+        });
+    });
+}
+else
+{
+    app.UseDeveloperExceptionPage();
+}
 
 app.UseRequestLocalization();
 
@@ -214,3 +244,14 @@ app.MapControllers();
 
 
 app.Run();
+
+public class ErrorDetails
+{
+    public int StatusCode { get; set; }
+    public string Message { get; set; }
+
+    public override string ToString()
+    {
+        return JsonConvert.SerializeObject(this);
+    }
+}
