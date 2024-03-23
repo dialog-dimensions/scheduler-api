@@ -2,6 +2,8 @@
 
 public interface IAutoScheduleScanner
 {
+    // IAutoScheduleProcess? ProcessInProgress { get; }
+
     TimeSpan CycleDuration { get; }
     TimeSpan CatchRangeDuration { get; }
     bool ShouldRun { get; set; }

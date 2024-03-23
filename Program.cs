@@ -22,6 +22,8 @@ using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Processes.Classes;
+using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
+using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
 using SchedulerApi.Services.Workflows.Scanners;
 using SchedulerApi.Services.Workflows.Strategies.Classes;
@@ -162,7 +164,7 @@ builder.Services.AddTransient<IAutoScheduleStrategy, AutoScheduleStrategy>();
 builder.Services.AddTransient<IAutoScheduleProcess, AutoScheduleProcess>();
 builder.Services.AddScoped<IAutoScheduleScanner, AutoScheduleScanner>();
 
-
+builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
 
 
 builder.Services.AddDbContext<ApiDbContext>(options =>

@@ -7,4 +7,6 @@ public interface IStrategy
     IStep? InitialStep { get; }
     void AddStep(Func<object[], Task> task);
     bool HasSteps { get; }
+
+    // IEnumerable<string> StepsInStrategyToString();
 }

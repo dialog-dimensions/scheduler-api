@@ -7,6 +7,11 @@ namespace SchedulerApi.Services.Workflows.Processes.Classes;
 
 public class AutoScheduleProcess : Process, IAutoScheduleProcess
 {
+    // TIMELINE
+    public DateTime ProcessStart { get; private set; }
+    public DateTime FileWindowEnd { get; private set; }
+    public DateTime PublishDateTime { get; private set; }
+    
     public AutoScheduleProcess(IServiceProvider serviceProvider) :
         base(serviceProvider.GetRequiredService<IAutoScheduleStrategy>())
     {
@@ -15,7 +20,9 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     private void HandleTimelineCaptured(object source, TimelineCapturedEventArgs e)
     {
-        
+        ProcessStart = e.ProcessStart;
+        FileWindowEnd = e.FileWindowEnd;
+        PublishDateTime = e.ProcessEnd;
     }
 
     public async Task Initialize(DateTime startDateTime, DateTime endDateTime, int shiftDuration)

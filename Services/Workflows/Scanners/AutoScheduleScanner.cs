@@ -1,13 +1,29 @@
 ﻿using SchedulerApi.DAL.Repositories.Interfaces;
-using SchedulerApi.Services.Workflows.Processes.Interfaces;
+using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Scanners;
 
 public class AutoScheduleScanner : IAutoScheduleScanner
 {
-    private readonly IScheduleRepository _scheduleRepository;
-    private readonly IAutoScheduleProcess _process;
-    
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IAutoScheduleProcessFactory _processFactory;
+
+    // private IAutoScheduleProcess? _processInProgress;
+    // public IAutoScheduleProcess? ProcessInProgress
+    // {
+    //     get
+    //     {
+    //         if (_processInProgress is { Status: TaskStatus.Created or TaskStatus.Running })
+    //         {
+    //             return _processInProgress;
+    //         }
+    //
+    //         ProcessInProgress = null;
+    //         return null;
+    //     }
+    //     private set => _processInProgress = value;
+    // }
+
     private int DefaultScheduleDuration { get; }
     private int DefaultShiftDuration { get; }
 
@@ -15,11 +31,11 @@ public class AutoScheduleScanner : IAutoScheduleScanner
     public TimeSpan CycleDuration { get; set; }
     
 
-    public AutoScheduleScanner(IScheduleRepository scheduleRepository, 
-        IAutoScheduleProcess autoScheduleProcess, IConfiguration configuration)
+    public AutoScheduleScanner(IAutoScheduleProcessFactory autoScheduleProcessFactory, IConfiguration configuration, 
+        IServiceProvider serviceProvider)
     {
-        _scheduleRepository = scheduleRepository;
-        _process = autoScheduleProcess;
+        _processFactory = autoScheduleProcessFactory;
+        _serviceProvider = serviceProvider;
         
         var paramsSection = configuration.GetSection("Params");
         var myParamsSection = paramsSection.GetSection("Workflows:AutoScheduleScanner");
@@ -45,7 +61,7 @@ public class AutoScheduleScanner : IAutoScheduleScanner
         {
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Entered Scan Iteration");
             
-            var latestSchedule = await _scheduleRepository.ReadLatestAsync();
+            var latestSchedule = await _serviceProvider.GetRequiredService<IScheduleRepository>().ReadLatestAsync();
             if (latestSchedule is null)
             {
                 Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Empty Latest Schedule, Breaking.");
@@ -60,9 +76,11 @@ public class AutoScheduleScanner : IAutoScheduleScanner
                 
                 var newStartDateTime = latestSchedule.EndDateTime;
                 var newEndDateTime = latestSchedule.EndDateTime.AddDays(DefaultScheduleDuration);
-
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Starting Process...");
-                await _process.Run(newStartDateTime, newEndDateTime, DefaultShiftDuration);
+                
+                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Crating and Starting Process...");
+                var newProcess = _processFactory.Create();
+                // ProcessInProgress = newProcess;
+                await newProcess.Run(newStartDateTime, newEndDateTime, DefaultShiftDuration);
             }
 
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Loop Delay until {DateTime.Now.Add(CycleDuration)}.");
