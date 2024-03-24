@@ -38,7 +38,7 @@ public class TwilioServices : ITwilioServices
         var parameters = new Dictionary<string, object>
         {
             { "name", userName },
-            { "query", $"?userId={userId}&phoneNumber={phoneNumber}"}
+            { "query", $"?userId={userId}&phoneNumber={phoneNumber}&redirect=login?userId={userId}"}
         };
 
         var execution = await ExecutionResource.CreateAsync(
