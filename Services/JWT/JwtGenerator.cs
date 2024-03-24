@@ -44,7 +44,7 @@ public class JwtGenerator : IJwtGenerator
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.Id!),
+            new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
         claims.AddRange(roleClaims);
@@ -53,7 +53,7 @@ public class JwtGenerator : IJwtGenerator
             issuer: _jwtParams["Issuer"],
             audience: _jwtParams["Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.Now.AddHours(_jwtParams.GetValue<double>("ExpiresHrs")),
             signingCredentials: credentials
         );
 
