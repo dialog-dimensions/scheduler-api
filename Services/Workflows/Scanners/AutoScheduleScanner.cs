@@ -1,28 +1,28 @@
 ﻿using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
+using SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Scanners;
 
 public class AutoScheduleScanner : IAutoScheduleScanner
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IAutoScheduleProcessFactory _processFactory;
-
-    // private IAutoScheduleProcess? _processInProgress;
-    // public IAutoScheduleProcess? ProcessInProgress
-    // {
-    //     get
-    //     {
-    //         if (_processInProgress is { Status: TaskStatus.Created or TaskStatus.Running })
-    //         {
-    //             return _processInProgress;
-    //         }
-    //
-    //         ProcessInProgress = null;
-    //         return null;
-    //     }
-    //     private set => _processInProgress = value;
-    // }
+    private readonly IServiceScopeFactory _scopeFactory;
+    
+    private IAutoScheduleProcess? _processInProgress;
+    public IAutoScheduleProcess? ProcessInProgress
+    {
+        get
+        {
+            if (_processInProgress is { Status: TaskStatus.Created or TaskStatus.Running })
+            {
+                return _processInProgress;
+            }
+    
+            ProcessInProgress = null;
+            return null;
+        }
+        private set => _processInProgress = value;
+    }
 
     private int DefaultScheduleDuration { get; }
     private int DefaultShiftDuration { get; }
@@ -31,11 +31,9 @@ public class AutoScheduleScanner : IAutoScheduleScanner
     public TimeSpan CycleDuration { get; set; }
     
 
-    public AutoScheduleScanner(IAutoScheduleProcessFactory autoScheduleProcessFactory, IConfiguration configuration, 
-        IServiceProvider serviceProvider)
+    public AutoScheduleScanner(IConfiguration configuration, IServiceScopeFactory scopeFactory)
     {
-        _processFactory = autoScheduleProcessFactory;
-        _serviceProvider = serviceProvider;
+        _scopeFactory = scopeFactory;
         
         var paramsSection = configuration.GetSection("Params");
         var myParamsSection = paramsSection.GetSection("Workflows:AutoScheduleScanner");
@@ -59,9 +57,11 @@ public class AutoScheduleScanner : IAutoScheduleScanner
         // Scan indefinitely.
         while(ShouldRun)
         {
+            await using var scope = _scopeFactory.CreateAsyncScope();
+            
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Entered Scan Iteration");
             
-            var latestSchedule = await _serviceProvider.GetRequiredService<IScheduleRepository>().ReadLatestAsync();
+            var latestSchedule =  await scope.ServiceProvider.GetRequiredService<IScheduleRepository>().ReadLatestAsync();
             if (latestSchedule is null)
             {
                 Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Empty Latest Schedule, Breaking.");
@@ -78,8 +78,8 @@ public class AutoScheduleScanner : IAutoScheduleScanner
                 var newEndDateTime = latestSchedule.EndDateTime.AddDays(DefaultScheduleDuration);
                 
                 Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Crating and Starting Process...");
-                var newProcess = _processFactory.Create();
-                // ProcessInProgress = newProcess;
+                var newProcess = scope.ServiceProvider.GetRequiredService<IAutoScheduleProcess>();
+                ProcessInProgress = newProcess;
                 await newProcess.Run(newStartDateTime, newEndDateTime, DefaultShiftDuration);
             }
 

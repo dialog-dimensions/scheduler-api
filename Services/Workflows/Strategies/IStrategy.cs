@@ -8,5 +8,5 @@ public interface IStrategy
     void AddStep(Func<object[], Task> task);
     bool HasSteps { get; }
 
-    // IEnumerable<string> StepsInStrategyToString();
+    IEnumerable<string> StepsInStrategyToString();
 }

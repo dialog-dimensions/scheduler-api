@@ -162,7 +162,7 @@ builder.Services.AddTransient<IScheduler, Scheduler>();
 builder.Services.AddTransient<IAutoScheduleStrategy, AutoScheduleStrategy>();
 
 builder.Services.AddTransient<IAutoScheduleProcess, AutoScheduleProcess>();
-builder.Services.AddScoped<IAutoScheduleScanner, AutoScheduleScanner>();
+builder.Services.AddSingleton<IAutoScheduleScanner, AutoScheduleScanner>();
 
 builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
 
