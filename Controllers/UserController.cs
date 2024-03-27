@@ -42,7 +42,7 @@ public class UserController : Controller
         var user = new IdentityUser
         {
             Id = model.Id!,
-            UserName = model.UserName,
+            UserName = model.Id,
             PhoneNumber = model.PhoneNumber
         };
 

@@ -6,7 +6,6 @@ namespace SchedulerApi.Models.ViewModels.Account;
 public class RegisterModel
 {
     [Required] public string? PhoneNumber { get; set; }
-    [Required] public string? UserName { get; set; }
     [Required] public string? Id { get; set; }
 
     [Required]
