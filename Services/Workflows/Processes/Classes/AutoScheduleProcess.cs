@@ -1,5 +1,6 @@
 ﻿using SchedulerApi.CustomEventArgs;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
+using SchedulerApi.Services.Workflows.Strategies;
 using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
@@ -16,6 +17,11 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         base(serviceProvider.GetRequiredService<IAutoScheduleStrategy>())
     {
         ((AutoScheduleStrategy)Strategy).TimelineCaptured += HandleTimelineCaptured;
+    }
+
+    public AutoScheduleProcess(IStrategy strategy) : base(strategy)
+    {
+        
     }
 
     private void HandleTimelineCaptured(object source, TimelineCapturedEventArgs e)

@@ -1,29 +1,37 @@
-﻿using SchedulerApi.Services.Workflows.Steps;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using SchedulerApi.Services.Workflows.Steps;
 using SchedulerApi.Services.Workflows.Strategies;
 
 namespace SchedulerApi.Services.Workflows.Processes;
 
 public class Process : IProcess
 {
+    public int Id { get; set; }
     public IStrategy Strategy { get; }
     public TaskStatus Status { get; private set; } = TaskStatus.Created;
 
-    
+
     private IStep? _currentStep;
+    
+    [NotMapped]
     public IStep? CurrentStep
     {
         get => _currentStep;
         private set
         {
             _currentStep = value;
+            CurrentStepName = value?.Task.Method.Name ?? string.Empty;
             if (value is null)
             {
                 Status = TaskStatus.RanToCompletion;
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Process Completed.");
             }
         }
     }
 
+    [Column("CurrentStep")]
+    public string CurrentStepName { get; set; }
+    
+    
     public Process(IStrategy strategy)
     {
         if (!strategy.HasSteps)
@@ -61,4 +69,7 @@ public class Process : IProcess
             throw;
         }
     }
+
+    [NotMapped]
+    public object Key => Id;
 }

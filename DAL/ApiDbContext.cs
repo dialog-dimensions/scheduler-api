@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Services.Workflows.Processes;
+using SchedulerApi.Services.Workflows.Processes.Classes;
+using SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 namespace SchedulerApi.DAL;
 
@@ -16,7 +19,9 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ShiftException> Exceptions { get; set; }
     public DbSet<ShiftSwap> Swaps { get; set; }
 
-     
+    public DbSet<Process> Processes { get; set; }
+
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -37,6 +42,13 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<ShiftSwap>()
             .ToTable("ShiftSwaps")
             .HasKey(swap => swap.SwapId);
+
+        modelBuilder.Entity<Process>()
+            .ToTable("Processes");
+
+        modelBuilder.Entity<AutoScheduleProcess>()
+            .ToTable("AutoScheduleProcesses")
+            .HasBaseType<Process>();
         
         
         //Relationships
@@ -132,6 +144,20 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .HasConversion(
                 v => v.ToString(), // Convert enum to string when saving to the database
                 v => (User)Enum.Parse(typeof(User), v) // Convert string back to enum when reading from the database
+            );
+        
+        modelBuilder.Entity<Process>()
+            .Property(p => p.Status)
+            .HasConversion(
+                v => v.ToString(), // Convert enum to string when saving to the database
+                v => (TaskStatus)Enum.Parse(typeof(TaskStatus), v) // Convert string back to enum when reading from the database
+            );
+        
+        modelBuilder.Entity<Process>()
+            .Property(p => p.Strategy)
+            .HasConversion(
+                v => v.GetType().Name, // Convert enum to string when saving to the database
+                v => default // Convert string back to enum when reading from the database
             );
         
         
