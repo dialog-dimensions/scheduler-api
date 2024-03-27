@@ -32,23 +32,12 @@ public class UserController : Controller
     [HttpPost("/api/[controller]/Register")]
     public async Task<IActionResult> RegisterAsync(RegisterModel model)
     {
-        var delay = 2000;
-
-        Console.WriteLine(">>> Entered Register Action");
-        await Task.Delay(delay);
-
         var employee = await _context.Employees.FindAsync(int.Parse(model.Id!));
         if (employee is null) return Unauthorized(new { Message = "Must be an employee to register." });
-
-        Console.WriteLine($">>> Found employee {employee.Name}, Role: {employee.Role}");
-        await Task.Delay(delay);
 
         var role = employee.Role;
         if (!await _roleManager.RoleExistsAsync(role))
             return BadRequest(new { Message = "Employee role is not a legal role." });
-
-        Console.WriteLine(">>> Role recognized");
-        await Task.Delay(delay);
 
         var user = new IdentityUser
         {
@@ -56,9 +45,6 @@ public class UserController : Controller
             UserName = model.UserName,
             PhoneNumber = model.PhoneNumber
         };
-
-        Console.WriteLine(">>> User created, now inserting to db...");
-        await Task.Delay(delay);
 
         var result = await _userManager.CreateAsync(user, model.Password!);
         if (!result.Succeeded)
@@ -72,13 +58,8 @@ public class UserController : Controller
             return Problem(string.Join("\n", result.Errors.Select(err => err.Description)));
         }
 
-        Console.WriteLine(">>> User inserted successfully. now linking role to user...");
-        await Task.Delay(delay);
-
         var roleResult = await _userManager.AddToRoleAsync(user, role);
         if (!roleResult.Succeeded) return Problem("Role assignment failed.");
-
-        Console.WriteLine(">>> Role linked successfully!");
 
         return Ok(new { Message = "Account created successfully." });
     }
