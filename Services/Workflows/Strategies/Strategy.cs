@@ -4,6 +4,8 @@ namespace SchedulerApi.Services.Workflows.Strategies;
 
 public class Strategy : IStrategy
 {
+    private readonly IServiceProvider _serviceProvider;
+    
     public IStep? InitialStep { get; private set; }
     private IStep? FinalStep { get; set; }
     public bool HasSteps => InitialStep is not null;
@@ -20,9 +22,15 @@ public class Strategy : IStrategy
         return result;
     }
 
+    protected Strategy(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
     public void AddStep(Func<object[], Task> task)
     {
-        var step = new Step(task);
+        var step = _serviceProvider.GetRequiredService<IStep>();
+        step.Initialize(task);
         
         if (InitialStep is null)
         {

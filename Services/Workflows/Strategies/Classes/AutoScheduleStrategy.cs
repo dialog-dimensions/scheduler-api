@@ -8,7 +8,7 @@ using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Strategies.Classes;
 
-public class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
+public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 {
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IEmployeeRepository _employeeRepository;
@@ -36,8 +36,9 @@ public class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         IScheduler scheduler,
         UserManager<IdentityUser> userManager,
         ITwilioServices twilio,
-        IConfiguration configuration
-    )
+        IConfiguration configuration,
+        IServiceProvider serviceProvider
+    ) : base(serviceProvider)
     {
         _scheduleRepository = scheduleRepository;
         _employeeRepository = employeeRepository;

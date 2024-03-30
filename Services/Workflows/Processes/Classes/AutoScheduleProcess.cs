@@ -1,13 +1,15 @@
 ﻿using SchedulerApi.CustomEventArgs;
+using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
-using SchedulerApi.Services.Workflows.Strategies;
-using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Processes.Classes;
 
 public class AutoScheduleProcess : Process, IAutoScheduleProcess
 {
+    private readonly IAutoScheduleProcessRepository _autoRepository;
+    private readonly IServiceProvider _serviceProvider;
+    
     // TIMELINE
     public DateTime ProcessStart { get; private set; }
     public DateTime FileWindowEnd { get; private set; }
@@ -22,10 +24,15 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     public AutoScheduleProcess(IServiceProvider serviceProvider, IAutoScheduleProcessRepository autoRepository)
     {
-        ((AutoScheduleStrategy)Strategy).TimelineCaptured += HandleTimelineCaptured;
+        _autoRepository = autoRepository;
+        _serviceProvider = serviceProvider;
+        Initialize();
     }
 
-    public AutoScheduleProcess(IStrategy strategy) : base(strategy)
+    public AutoScheduleProcess() { }
+
+
+    protected override async Task SaveChangesAsync()
     {
         await _autoRepository.UpdateAsync(this);
         SaveChangesPending = false;
@@ -36,9 +43,17 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         ProcessStart = e.ProcessStart;
         FileWindowEnd = e.FileWindowEnd;
         PublishDateTime = e.ProcessEnd;
+        SaveChangesPending = true;
     }
 
-    public async Task Initialize(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    private void Initialize()
+    {
+        var strategy = _serviceProvider.GetRequiredService<IAutoScheduleStrategy>();
+        strategy.TimelineCaptured += HandleTimelineCaptured;
+        base.Initialize(strategy);
+    }
+
+    private async Task Activate(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var parameters = new object[] { startDateTime, endDateTime, shiftDuration };
         await Proceed(parameters);

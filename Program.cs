@@ -26,6 +26,7 @@ using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
 using SchedulerApi.Services.Workflows.Scanners;
+using SchedulerApi.Services.Workflows.Steps;
 using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
@@ -159,13 +160,13 @@ builder.Services.AddTransient<IScheduleScorer, ScheduleScorer>();
 builder.Services.AddTransient<IScheduleReportBuilder, ScheduleReportBuilder>();
 builder.Services.AddTransient<IScheduler, Scheduler>();
 
-builder.Services.AddTransient<IAutoScheduleStrategy, AutoScheduleStrategy>();
-
-builder.Services.AddTransient<IAutoScheduleProcess, AutoScheduleProcess>();
+builder.Services.AddScoped<IAutoScheduleStrategy, AutoScheduleStrategy>();
+builder.Services.AddScoped<IAutoScheduleProcess, AutoScheduleProcess>();
 builder.Services.AddSingleton<IAutoScheduleScanner, AutoScheduleScanner>();
-
 builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
-
+builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRepository>();
+builder.Services.AddScoped<IRepository<Step>, StepRepository>();
+builder.Services.AddTransient<IStep, Step>();
 
 builder.Services.AddDbContext<ApiDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

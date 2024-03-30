@@ -8,18 +8,19 @@ namespace SchedulerApi.Controllers;
 [ApiController]
 public class ProcessController : Controller
 {
-    private readonly IAutoScheduleProcess _scheduleProcess;
+    private readonly IServiceProvider _serviceProvider;
 
-    public ProcessController(IAutoScheduleProcess scheduleProcess)
+    public ProcessController(IServiceProvider serviceProvider)
     {
-        _scheduleProcess = scheduleProcess;
+        _serviceProvider = serviceProvider;
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
-        await _scheduleProcess.Run(startDateTime, endDateTime, shiftDuration);
+        var process = _serviceProvider.GetRequiredService<IAutoScheduleProcess>();
+        await process.Run(startDateTime, endDateTime, shiftDuration);
         return Ok();
     }
 }

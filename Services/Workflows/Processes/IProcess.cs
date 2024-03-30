@@ -12,7 +12,7 @@ public interface IProcess : IKeyProvider
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public int Id { get; set; }
     
-    IStrategy Strategy { get; }
+    IStrategy? Strategy { get; }
     TaskStatus Status { get; }
     IStep? CurrentStep { get; }
     Task Proceed(object? parameter);
