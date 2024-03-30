@@ -6,7 +6,7 @@ using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Services.Workflows.Processes;
 using SchedulerApi.Services.Workflows.Processes.Classes;
-using SchedulerApi.Services.Workflows.Processes.Interfaces;
+using SchedulerApi.Services.Workflows.Steps;
 
 namespace SchedulerApi.DAL;
 
@@ -20,6 +20,9 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
     public DbSet<ShiftSwap> Swaps { get; set; }
 
     public DbSet<Process> Processes { get; set; }
+    public DbSet<AutoScheduleProcess> AutoScheduleProcesses { get; set; }
+
+    public DbSet<Step> Steps { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -47,9 +50,10 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .ToTable("Processes");
 
         modelBuilder.Entity<AutoScheduleProcess>()
-            .ToTable("AutoScheduleProcesses")
-            .HasBaseType<Process>();
+            .ToTable("AutoScheduleProcesses");
         
+        modelBuilder.Entity<Step>()
+            .ToTable("Steps");
         
         //Relationships
         modelBuilder.Entity<Shift>()
@@ -71,6 +75,11 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .HasOne<Employee>(swap => swap.PreviousEmployee)
             .WithMany()
             .HasForeignKey(swap => swap.PreviousEmployeeId);
+
+        modelBuilder.Entity<Step>()
+            .HasOne<Process>(step => step.Process)
+            .WithMany()
+            .HasForeignKey(step => step.ProcessId);
         
         
         //Custom Indexes
@@ -81,6 +90,14 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Shift>()
             .HasIndex(shift => shift.ScheduleKey)
             .HasDatabaseName("IX_Shifts_ScheduleKey");
+
+        modelBuilder.Entity<AutoScheduleProcess>()
+            .HasIndex(autoProcess => autoProcess.ScheduleStart)
+            .HasDatabaseName("IX_AutoScheduleProcesses_ScheduleStart");
+        
+        modelBuilder.Entity<Step>()
+            .HasIndex(step => step.ProcessId)
+            .HasDatabaseName("IX_Steps_ProcessId");
         
         
         //ColumnTypes and Conversions
@@ -145,7 +162,7 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
                 v => v.ToString(), // Convert enum to string when saving to the database
                 v => (User)Enum.Parse(typeof(User), v) // Convert string back to enum when reading from the database
             );
-        
+
         modelBuilder.Entity<Process>()
             .Property(p => p.Status)
             .HasConversion(
@@ -158,6 +175,27 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .HasConversion(
                 v => v.GetType().Name, // Convert enum to string when saving to the database
                 v => default // Convert string back to enum when reading from the database
+            );
+        
+        modelBuilder.Entity<AutoScheduleProcess>()
+            .Property(p => p.Status)
+            .HasConversion(
+                v => v.ToString(), // Convert enum to string when saving to the database
+                v => (TaskStatus)Enum.Parse(typeof(TaskStatus), v) // Convert string back to enum when reading from the database
+            );
+        
+        modelBuilder.Entity<AutoScheduleProcess>()
+            .Property(p => p.Strategy)
+            .HasConversion(
+                v => v.GetType().Name, // Convert enum to string when saving to the database
+                v => default // Convert string back to enum when reading from the database
+            );
+        
+        modelBuilder.Entity<Step>()
+            .Property(s => s.Status)
+            .HasConversion(
+                v => v.ToString(), // Convert enum to string when saving to the database
+                v => (TaskStatus)Enum.Parse(typeof(TaskStatus), v) // Convert string back to enum when reading from the database
             );
         
         

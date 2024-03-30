@@ -388,7 +388,6 @@ namespace Api.Scheduler.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Strategy")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -396,6 +395,33 @@ namespace Api.Scheduler.Migrations
                     b.ToTable("Processes", (string)null);
 
                     b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("SchedulerApi.Services.Workflows.Steps.Step", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProcessId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcessId")
+                        .HasDatabaseName("IX_Steps_ProcessId");
+
+                    b.ToTable("Steps", (string)null);
                 });
 
             modelBuilder.Entity("SchedulerApi.Services.Workflows.Processes.Classes.AutoScheduleProcess", b =>
@@ -410,6 +436,18 @@ namespace Api.Scheduler.Migrations
 
                     b.Property<DateTime>("PublishDateTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ScheduleEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ScheduleShiftDuration")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ScheduleStart")
+                        .HasColumnType("datetime2");
+
+                    b.HasIndex("ScheduleStart")
+                        .HasDatabaseName("IX_AutoScheduleProcesses_ScheduleStart");
 
                     b.ToTable("AutoScheduleProcesses", (string)null);
                 });
@@ -510,6 +548,17 @@ namespace Api.Scheduler.Migrations
                     b.Navigation("PreviousEmployee");
 
                     b.Navigation("Shift");
+                });
+
+            modelBuilder.Entity("SchedulerApi.Services.Workflows.Steps.Step", b =>
+                {
+                    b.HasOne("SchedulerApi.Services.Workflows.Processes.Process", "Process")
+                        .WithMany()
+                        .HasForeignKey("ProcessId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Process");
                 });
 
             modelBuilder.Entity("SchedulerApi.Services.Workflows.Processes.Classes.AutoScheduleProcess", b =>
