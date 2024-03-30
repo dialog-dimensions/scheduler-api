@@ -26,8 +26,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
 
     public delegate void TimelineCapturedEventHandler(object source, TimelineCapturedEventArgs e);
-
-    public event TimelineCapturedEventHandler? TimelineCaptured;
+    public event IAutoScheduleStrategy.TimelineCapturedEventHandler? TimelineCaptured;
     
     public AutoScheduleStrategy(
         IScheduleRepository scheduleRepository,
@@ -52,49 +51,25 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         Construct();
     }
 
-    private async Task Initiate()
-    {
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Initial Step.");
-        await Task.Delay(1000);
-        ProcessStart = DateTime.Now;
-    }
-
-    private async Task InitiateAsync(object[] parameters)
-    {
-        await Initiate();
-    }
-
     private async Task CreateShifts(DateTime start, DateTime end, int shiftDuration)
     {
         CaptureProcessTimeline(start);
-        
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Creating Shifts for the Schedule");
-        var schedule = _scheduleFactory.FromParameters(start, end, shiftDuration);
-        
-        await _scheduleRepository.CreateAsync(schedule);
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Shifts Saved!");
+        await _scheduleRepository.CreateAsync(
+            _scheduleFactory.FromParameters(start, end, shiftDuration)
+            );
     }
 
     private void CaptureProcessTimeline(DateTime start)
     {
-        var fileWindowDuration = TimeSpan.FromHours(_params.GetValue<double>("FileWindowDurHrs"));
-        var headsUpDuration = TimeSpan.FromHours(_params.GetValue<double>("HeadsUpDurHrs"));
-
-        ProcessStart = DateTime.Now;
-        FileWindowEnd = DateTime.Now.Add(fileWindowDuration);
-        ProcessEnd = start.Subtract(headsUpDuration);
         ScheduleStart = start;
-        
-        Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} PROCESS TIMELINE");
-        Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} 1. INITIATION: {ProcessStart}");
-        Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} 2. FILE WINDOW END / APPROVAL WINDOW START: {FileWindowEnd}");
-        Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} 3. APPROVAL WINDOW END / PUBLISH SHIFTS TIME: {ProcessEnd}");
-        Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} 4. SCHEDULE STARTS: {ScheduleStart}");
+        ProcessStart = DateTime.Now;
+        FileWindowEnd = DateTime.Now.AddHours(_params.GetValue<double>("FileWindowDurHrs"));
+        ProcessEnd = start.AddHours(-_params.GetValue<double>("HeadsUpDurHrs"));
         
         OnTimelineCaptured();
     }
 
-    protected virtual void OnTimelineCaptured()
+    private void OnTimelineCaptured()
     {
         TimelineCaptured?.Invoke(this, new TimelineCapturedEventArgs
         {
