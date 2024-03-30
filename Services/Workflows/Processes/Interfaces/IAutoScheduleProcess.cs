@@ -5,7 +5,10 @@ public interface IAutoScheduleProcess : IProcess
     public DateTime ProcessStart { get; }
     public DateTime FileWindowEnd { get; }
     public DateTime PublishDateTime { get; }
-    
-    Task Initialize(DateTime startDateTime, DateTime endDateTime, int shiftDuration);
+
+    public DateTime ScheduleStart { get; }
+    public DateTime ScheduleEnd { get; }
+    public int ScheduleShiftDuration { get; }
+
     Task Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration);
 }

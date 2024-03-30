@@ -13,8 +13,14 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
     public DateTime FileWindowEnd { get; private set; }
     public DateTime PublishDateTime { get; private set; }
     
-    public AutoScheduleProcess(IServiceProvider serviceProvider) :
-        base(serviceProvider.GetRequiredService<IAutoScheduleStrategy>())
+    
+    // SCHEDULE ATTRIBUTES
+    public DateTime ScheduleStart { get; private set; }
+    public DateTime ScheduleEnd { get; private set; }
+    public int ScheduleShiftDuration { get; private set; }
+
+
+    public AutoScheduleProcess(IServiceProvider serviceProvider, IAutoScheduleProcessRepository autoRepository)
     {
         ((AutoScheduleStrategy)Strategy).TimelineCaptured += HandleTimelineCaptured;
     }
@@ -39,7 +45,11 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     public async Task Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
-        await Initialize(startDateTime, endDateTime, shiftDuration);
+        ScheduleStart = startDateTime;
+        ScheduleEnd = endDateTime;
+        ScheduleShiftDuration = shiftDuration;
+        
+        await Activate(startDateTime, endDateTime, shiftDuration);
 
         while (CurrentStep is not null)
         {
