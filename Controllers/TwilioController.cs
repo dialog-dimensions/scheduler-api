@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
@@ -12,11 +13,15 @@ public class TwilioController : Controller
 {
     private readonly ITwilioServices _twilioServices;
     private readonly IEmployeeRepository _employeeRepository;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly IScheduleRepository _scheduleRepository;
 
-    public TwilioController(ITwilioServices twilioServices, IEmployeeRepository employeeRepository)
+    public TwilioController(ITwilioServices twilioServices, IEmployeeRepository employeeRepository, UserManager<IdentityUser> userManager, IScheduleRepository scheduleRepository)
     {
         _twilioServices = twilioServices;
         _employeeRepository = employeeRepository;
+        _userManager = userManager;
+        _scheduleRepository = scheduleRepository;
     }
     
     // [HttpPost("{phoneNumber}")]
@@ -70,6 +75,38 @@ public class TwilioController : Controller
         try
         {
             await _twilioServices.TriggerCallToRegisterFlow(employee.Name, id.ToString(), phoneNumber);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            return Problem(ex.Message);
+        }
+    }
+    
+    [HttpPost("PublishShifts")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> PublishShifts()
+    {
+        var activeEmployees = await _employeeRepository.ReadAllActiveAsync();
+        var nearestSchedule = await _scheduleRepository.ReadNextAsync();
+        if (nearestSchedule is null)
+        {
+            return NotFound();
+        }
+        
+        try
+        {
+            foreach (var employee in activeEmployees)
+            {
+                var user = await _userManager.FindByIdAsync(employee.Id.ToString());
+                if (user is null)
+                {
+                    continue;
+                }
+
+                await _twilioServices.TriggerPublishShiftsFlow(user.PhoneNumber!, employee.Name,
+                    nearestSchedule.StartDateTime);
+            }
             return Ok();
         }
         catch (Exception ex)

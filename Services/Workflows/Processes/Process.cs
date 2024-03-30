@@ -21,10 +21,17 @@ public class Process : IProcess
         {
             _currentStep = value;
             CurrentStepName = value?.Task.Method.Name ?? string.Empty;
+            
             if (value is null)
             {
                 Status = TaskStatus.RanToCompletion;
             }
+            else
+            {
+                value.Process = this;
+            }
+
+            SaveChangesPending = true;
         }
     }
 
@@ -41,12 +48,26 @@ public class Process : IProcess
         
         Strategy = strategy;
         CurrentStep = Strategy.InitialStep!;
+        Status = TaskStatus.WaitingToRun;
+        SaveChangesPending = true;
+    }
+
+    protected virtual async Task SaveChangesAsync()
+    {
+        if (!SaveChangesPending) return;
+        await Repository.UpdateAsync(this);
+        SaveChangesPending = false;
     }
     
     
     public async Task Proceed(object? parameter = default)
     {
-        if (Status == TaskStatus.Created)
+        if (SaveChangesPending)
+        {
+            await SaveChangesAsync();
+        }
+        
+        if (Status == TaskStatus.WaitingToRun)
         {
             Status = TaskStatus.Running;
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Process Running.");
@@ -56,7 +77,7 @@ public class Process : IProcess
         {
             return;
         }
-        
+
         try
         {
             await CurrentStep!.Run(parameter);
@@ -66,7 +87,10 @@ public class Process : IProcess
         {
             Status = TaskStatus.Faulted;
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Process Faulted.");
-            throw;
+        }
+        finally
+        {
+            await SaveChangesAsync();
         }
     }
 

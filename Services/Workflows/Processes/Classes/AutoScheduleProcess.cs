@@ -27,7 +27,8 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     public AutoScheduleProcess(IStrategy strategy) : base(strategy)
     {
-        
+        await _autoRepository.UpdateAsync(this);
+        SaveChangesPending = false;
     }
 
     private void HandleTimelineCaptured(object source, TimelineCapturedEventArgs e)

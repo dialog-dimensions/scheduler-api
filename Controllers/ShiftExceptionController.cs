@@ -1,11 +1,13 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
+using SchedulerApi.Services.Workflows.Processes.Classes;
 
 namespace SchedulerApi.Controllers;
 
@@ -16,13 +18,18 @@ public class
 {
     private readonly ApiDbContext _context;
     private readonly IScheduleRepository _scheduleRepository;
+    private readonly IAutoScheduleProcessRepository _processRepository;
     private readonly ITwilioServices _twilio;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public ShiftExceptionController(ApiDbContext context, IScheduleRepository scheduleRepository, ITwilioServices twilio)
+    public ShiftExceptionController(ApiDbContext context, IScheduleRepository scheduleRepository, ITwilioServices twilio
+    , IAutoScheduleProcessRepository processRepository, UserManager<IdentityUser> userManager)
     {
         _context = context;
         _scheduleRepository = scheduleRepository;
         _twilio = twilio;
+        _processRepository = processRepository;
+        _userManager = userManager;
     }
     
     
@@ -157,6 +164,8 @@ public class
     [Authorize]
     public async Task<IActionResult> PostExceptions(List<ShiftExceptionDto> exceptions)
     {
+        DateTime? scheduleKey = null;
+        
         var parseUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
         if (!parseUserId)
         {
@@ -174,26 +183,27 @@ public class
             return Forbid();
         }
         
+        var employee = await _context.Employees.FindAsync(userId);
+        if (employee is null)
+        {
+            return NotFound(new { Message = "Employee not found in database." });
+        }
+        
         // FOR SENDING ACK BACK TO THE USER
         bool sendAck = false;
-        if (role is "Employee")
+        if (employee.Active)
         {
             var arbitraryShiftKey = exceptions.First().ShiftKey;
             var arbitraryShift = await _context.Shifts.FindAsync(arbitraryShiftKey);
             if (arbitraryShift is not null)
             {
-                var scheduleKey = arbitraryShift.ScheduleKey;
+                scheduleKey = arbitraryShift.ScheduleKey;
                 var firstSubmission = !await _context.Exceptions
                     .Include(ex => ex.Shift)
-                    .AnyAsync(ex => ex.Shift.ScheduleKey == scheduleKey);
+                    .Where(ex => ex.Shift.ScheduleKey == scheduleKey)
+                    .AnyAsync(ex => ex.EmployeeId == userId);
                 sendAck = firstSubmission;
             }
-        }
-
-        var employee = await _context.Employees.FindAsync(userId);
-        if (employee is null)
-        {
-            return NotFound(new { Message = "Employee not found in database." });
         }
         
         foreach (var exception in exceptions)
@@ -221,7 +231,18 @@ public class
         if (sendAck)
         {
             Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} Sending file ack back to user...");
-            // TODO: send ack back to the user using the process timeline.
+            var runningProcess = await _processRepository.ReadRunningAsync(scheduleKey!.Value);
+            if (runningProcess is not null)
+            {
+                var fileWindowEnd = runningProcess.FileWindowEnd;
+                var publishDateTime = runningProcess.PublishDateTime;
+                var user = await _userManager.FindByIdAsync(userId.ToString());
+                if (user is not null)
+                {
+                    await _twilio.TriggerAckFileFlow(user.PhoneNumber!, fileWindowEnd, publishDateTime);
+                }
+            }
+                
         }
 
         return Ok();

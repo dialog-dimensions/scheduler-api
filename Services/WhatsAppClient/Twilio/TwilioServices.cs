@@ -75,9 +75,23 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public Task TriggerAckFileFlow(string phoneNumber, DateTime fileEndDateTime, DateTime publishDateTime)
+    public async Task TriggerAckFileFlow(string phoneNumber, DateTime fileEndDateTime, DateTime publishDateTime)
     {
-        throw new NotImplementedException();
+        var parameters = new Dictionary<string, object>
+        {
+            { "publishDate", publishDateTime.ToString(DateFormat, _he) },
+            { "fileWindowEndDate", fileEndDateTime.ToString(DateFormat, _he) },
+            { "fileWindowEndTime", fileEndDateTime.ToString("HH:mm") }
+        };
+        
+        var execution = await ExecutionResource.CreateAsync(
+            to: new PhoneNumber(PhoneNumberFormat(phoneNumber)),
+            from: new PhoneNumber(SenderPhoneNumber),
+            parameters: parameters,
+            pathFlowSid: _flows["AcknowledgeFile"]!
+        );
+
+        Console.WriteLine(execution.Sid);
     }
 
     public async Task TriggerNotifyManagerFlow(string phoneNumber, string managerName, DateTime scheduleStartDateTime,
