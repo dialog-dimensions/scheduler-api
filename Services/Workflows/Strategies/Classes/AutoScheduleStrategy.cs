@@ -91,8 +91,6 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
     private async Task NotifyGather()
     {
         var activeEmployees = await _employeeRepository.ReadAllActiveAsync();
-
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Beginning Notifying Employees...");
         foreach (var employee in activeEmployees)
         {
             var id = employee.Id.ToString();
@@ -105,7 +103,6 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
             var userName = employee.Name;
             var phoneNumber = user.PhoneNumber!;
             
-            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Now Sending to {id} on {phoneNumber}...");
             await _twilio.TriggerCallToFileFlow(phoneNumber, userName, ScheduleStart, FileWindowEnd);
             await Task.Delay(_messageBufferTime);
         }
@@ -119,14 +116,12 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
     private static async Task Await(TimeSpan timeSpan)
     {
         var delay = timeSpan < TimeSpan.Zero ? TimeSpan.Zero : timeSpan;
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Now Waiting Until {DateTime.Now.Add(timeSpan)} Before Proceeding");
         await Task.Delay(delay);
     }
 
     private async Task AwaitGather()
     {
-        var actualFileWindowDuration = FileWindowEnd.Subtract(DateTime.Now);
-        await Await(actualFileWindowDuration);
+        await Await(FileWindowEnd.Subtract(DateTime.Now));
     }
 
     private async Task AwaitGatherAsync(object[] parameters)
@@ -142,10 +137,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
             throw new KeyNotFoundException("Schedule not found in database.");
         }
 
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Running Schedule Engine...");
         var results = await _scheduler.RunAsync(schedule);
-
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Applying Arrangement on Database.");
         await _scheduleRepository.AssignEmployees(ScheduleStart, results.CompleteSchedule);
     }
 
@@ -197,21 +189,10 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         }
 
         var report = await _scheduleRepository.GetScheduleReport(schedule);
-
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Updating Balance Data");
         foreach (var increments in report.Increments)
         {
-            var employeeId = increments.EmployeeId;
-            var regularIncrement = increments.RegularIncrement;
-            var difficultIncrement = increments.DifficultIncrement;
-            
-            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Visiting {employeeId}");
-            
-            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Updating Regular Balance by {regularIncrement}...");
-            await _employeeRepository.IncrementRegularBalance(employeeId, regularIncrement);
-            
-            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Updating Difficult Balance by {difficultIncrement}...");
-            await _employeeRepository.IncrementDifficultBalance(employeeId, difficultIncrement);
+            await _employeeRepository.IncrementRegularBalance(increments.EmployeeId, increments.RegularIncrement);
+            await _employeeRepository.IncrementDifficultBalance(increments.EmployeeId, increments.DifficultIncrement);
         }
     }
 
@@ -226,30 +207,16 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         var schedule = await _scheduleRepository.ReadAsync(ScheduleStart);
         if (schedule is null)
         {
-            Console.WriteLine("Schedule not found in database.");
             return;
         }
-        
         data.Schedule = schedule;
         
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Publishing Schedule...");
         foreach (var employee in data.Employees)
         {
-            var employeeId = employee.Id;
-            var employeeName = employee.Name;
+            var user = await _userManager.FindByIdAsync(employee.Id.ToString());
+            await _twilio.TriggerPublishShiftsFlow(user!.PhoneNumber!, employee.Name, data.Schedule.StartDateTime, 
+                data.Schedule.EndDateTime);
             
-            Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Notifying {employeeId}.");
-            var user = await _userManager.FindByIdAsync(employeeId.ToString());
-            if (user is null)
-            {
-                return;
-            }
-
-            var phoneNumber = user.PhoneNumber!;
-            var shifts = data.Schedule
-                .Where(shift => shift.EmployeeId == employeeId)
-                .Select(shift => shift.StartDateTime);
-            await _twilio.TriggerPublishShiftsFlow(phoneNumber, employeeName, ScheduleStart);
             await Task.Delay(_messageBufferTime);
         }
     }
