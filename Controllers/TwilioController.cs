@@ -105,7 +105,7 @@ public class TwilioController : Controller
                 }
 
                 await _twilioServices.TriggerPublishShiftsFlow(user.PhoneNumber!, employee.Name,
-                    nearestSchedule.StartDateTime);
+                    nearestSchedule.StartDateTime, nearestSchedule.EndDateTime);
             }
             return Ok();
         }

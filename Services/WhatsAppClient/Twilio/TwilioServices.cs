@@ -118,12 +118,13 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public async Task TriggerPublishShiftsFlow(string phoneNumber, string employeeName, DateTime scheduleStartDateTime)
+    public async Task TriggerPublishShiftsFlow(string phoneNumber, string employeeName, DateTime from, DateTime to)
     {
         var parameters = new Dictionary<string, object>
         {
             { "name", employeeName },
-            { "scheduleStart", scheduleStartDateTime.ToString(DateFormat, _he) },
+            { "scheduleStart", from.ToString("dd.MM") },
+            { "scheduleEnd", to.ToString("dd.MM")}
         };
 
         var execution = await ExecutionResource.CreateAsync(
