@@ -1,14 +1,31 @@
 ﻿using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Interfaces;
+using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities;
 
 public class Shift : IKeyProvider
 {
+    
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
-    public DateTime ScheduleKey { get; set; }
+
+    private Desk _desk;
+
+    public Desk Desk
+    {
+        get => _desk;
+        set
+        {
+            _desk = value;
+            DeskId = value.Id;
+        }
+    }
+    
+    public string DeskId { get; private set; }
+    
+    public DateTime ScheduleStartDateTime { get; set; }
     
     private Employee? _employee;
     public Employee? Employee
@@ -24,7 +41,7 @@ public class Shift : IKeyProvider
     }
     public int? EmployeeId { get; private set; }
 
-    public object Key => StartDateTime;
+    public object Key => new {DeskId, StartDateTime};
 
     public DateTime ModificationDateTime { get; set; }
     public User ModificationUser { get; set; }
@@ -37,7 +54,8 @@ public class Shift : IKeyProvider
     {
         StartDateTime = StartDateTime,
         EndDateTime = EndDateTime,
-        ScheduleKey = ScheduleKey,
+        Desk = Desk,
+        ScheduleStartDateTime = ScheduleStartDateTime,
         Employee = Employee,
         EmployeeId = EmployeeId,
     };

@@ -1,12 +1,26 @@
 ﻿using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Interfaces;
+using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities;
 
 public class ShiftException : IKeyProvider
 {
-    public DateTime ShiftKey { get; set; }
+    private Desk _desk;
+
+    public Desk Desk
+    {
+        get => _desk;
+        set
+        {
+            _desk = value;
+            DeskId = value.Id;
+        }
+    }
+    public string DeskId { get; private set; }
+    
+    public DateTime ShiftStartDateTime { get; set; }
     public Shift Shift { get; set; }
 
     public int EmployeeId { get; set; }
@@ -18,5 +32,5 @@ public class ShiftException : IKeyProvider
     public DateTime ModificationDateTime { get; set; }
     public User ModificationUser { get; set; }
     
-    public object Key => new { ShiftKey, EmployeeId };
+    public object Key => new { DeskId, ShiftStartDateTime, EmployeeId };
 }

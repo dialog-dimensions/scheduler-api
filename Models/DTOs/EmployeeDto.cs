@@ -1,4 +1,5 @@
 ﻿using SchedulerApi.Models.DTOs.Interfaces;
+using SchedulerApi.Models.DTOs.OrganizationEntities;
 using SchedulerApi.Models.Entities.Workers;
 
 namespace SchedulerApi.Models.DTOs;
@@ -11,6 +12,7 @@ public class EmployeeDto : IDto<Employee, EmployeeDto>
     public double DifficultBalance { get; set; }
     public bool Active { get; set; }
     public string Role { get; set; } = "Employee";
+    public UnitDto Unit { get; set; }
 
     public static EmployeeDto FromEntity(Employee entity) => new()
     {
@@ -19,7 +21,8 @@ public class EmployeeDto : IDto<Employee, EmployeeDto>
         Balance = entity.Balance,
         DifficultBalance = entity.DifficultBalance,
         Active = entity.Active,
-        Role = entity.Role
+        Role = entity.Role,
+        Unit = UnitDto.FromEntity(entity.Unit)
     };
 
     public Employee ToEntity() => new()
@@ -29,6 +32,7 @@ public class EmployeeDto : IDto<Employee, EmployeeDto>
         Balance = Balance,
         DifficultBalance = DifficultBalance,
         Active = Active,
-        Role = Role
+        Role = Role,
+        Unit = Unit.ToEntity()
     };
 }

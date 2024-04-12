@@ -1,4 +1,5 @@
 ﻿using SchedulerApi.Models.Entities.Workers.Interfaces;
+using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities.Workers.BaseClasses;
 
@@ -9,9 +10,23 @@ public abstract class Worker : IWorker
     public string Name { get; set; }
     public string Role { get; set; }
 
+    private Unit _unit;
+    public Unit Unit
+    {
+        get => _unit;
+        set
+        {
+            _unit = value;
+            UnitId = value.Id;
+        }
+    }
+    
+    
+    public string UnitId { get; private set; }
+
     protected bool Equals(Worker other)
     {
-        return Id == other.Id && Name == other.Name && Role == other.Role;
+        return Id == other.Id && Name == other.Name;
     }
 
     public bool Equals(IWorker? other)
@@ -29,6 +44,6 @@ public abstract class Worker : IWorker
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Id, Name, Role);
+        return HashCode.Combine(Id, Name);
     }
 }
