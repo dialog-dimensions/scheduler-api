@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SchedulerApi.Models.DTOs.OrganizationEntities;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 namespace SchedulerApi.Controllers;
@@ -17,10 +19,10 @@ public class ProcessController : Controller
 
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task<IActionResult> Run(DeskDto desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var process = _serviceProvider.GetRequiredService<IAutoScheduleProcess>();
-        await process.Run(startDateTime, endDateTime, shiftDuration);
+        await process.Run(desk.ToEntity(), startDateTime, endDateTime, shiftDuration);
         return Ok();
     }
 }

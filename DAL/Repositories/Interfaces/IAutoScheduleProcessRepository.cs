@@ -5,5 +5,5 @@ namespace SchedulerApi.DAL.Repositories.Interfaces;
 
 public interface IAutoScheduleProcessRepository : IRepository<AutoScheduleProcess>
 {
-    Task<AutoScheduleProcess?> ReadRunningAsync(DateTime scheduleStart);
+    Task<AutoScheduleProcess?> ReadRunningAsync(string deskId, DateTime scheduleStart);
 }

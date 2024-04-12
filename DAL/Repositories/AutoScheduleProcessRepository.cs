@@ -21,18 +21,29 @@ public class AutoScheduleProcessRepository : Repository<AutoScheduleProcess>, IA
 
     public override async Task<AutoScheduleProcess?> ReadAsync(object key)
     {
-        if (key is not int id) return null;
-        return await Context.AutoScheduleProcesses.FirstOrDefaultAsync(p => p.Id == id);
+        if (key is not int id) throw new ArgumentException("key is not of expected type.");
+        return await Context.AutoScheduleProcesses
+            .Include(p => p.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .FirstOrDefaultAsync(p => p.Id == id);
     }
 
     public override async Task<IEnumerable<AutoScheduleProcess>> ReadAllAsync()
     {
-        return await Context.AutoScheduleProcesses.ToListAsync();
+        return await Context.AutoScheduleProcesses
+            .Include(p => p.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .ToListAsync();
     }
 
     public override async Task DeleteAsync(object key)
     {
-        var obj = await ReadAsync(key);
+        if (key is not int id)
+        {
+            throw new ArgumentException("key is not of expected type.");
+        }
+        
+        var obj = await ReadAsync(id);
         if (obj is null)
         {
             return;
@@ -47,10 +58,13 @@ public class AutoScheduleProcessRepository : Repository<AutoScheduleProcess>, IA
         await Context.SaveChangesAsync();
     }
 
-    public async Task<AutoScheduleProcess?> ReadRunningAsync(DateTime scheduleStart)
+    public async Task<AutoScheduleProcess?> ReadRunningAsync(string deskId, DateTime scheduleStart)
     {
         return await Context.AutoScheduleProcesses
             .Where(p => p.Status == TaskStatus.Running)
+            .Where(p => p.DeskId == deskId)
+            .Include(p => p.Desk)
+            .ThenInclude(desk => desk.Unit)
             .FirstOrDefaultAsync(p => p.ScheduleStart == scheduleStart);
     }
 

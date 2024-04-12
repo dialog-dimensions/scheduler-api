@@ -2,6 +2,7 @@
 using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
@@ -24,6 +25,17 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
     public DateTime ProcessEnd { get; private set; }
     public DateTime ScheduleStart { get; private set; }
 
+    private Desk _desk;
+    public Desk Desk
+    {
+        get => _desk;
+        private set
+        {
+            _desk = value;
+            DeskId = value.Id;
+        }
+    }
+    public string DeskId { get; private set; }
 
     public delegate void TimelineCapturedEventHandler(object source, TimelineCapturedEventArgs e);
     public event IAutoScheduleStrategy.TimelineCapturedEventHandler? TimelineCaptured;
@@ -51,11 +63,11 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         Construct();
     }
 
-    private async Task CreateShifts(DateTime start, DateTime end, int shiftDuration)
+    private async Task CreateShifts(Desk desk, DateTime start, DateTime end, int shiftDuration)
     {
         CaptureProcessTimeline(start);
         await _scheduleRepository.CreateAsync(
-            _scheduleFactory.FromParameters(start, end, shiftDuration)
+            _scheduleFactory.FromParameters(desk, start, end, shiftDuration)
             );
     }
 
@@ -81,11 +93,12 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task CreateShiftsAsync(IReadOnlyList<object> parameters)
     {
-        var start = (DateTime)parameters[0];
-        var end = (DateTime)parameters[1];
-        var shiftDuration = (int)parameters[2];
+        var desk = (Desk)parameters[0];
+        var start = (DateTime)parameters[1];
+        var end = (DateTime)parameters[2];
+        var shiftDuration = (int)parameters[3];
 
-        await CreateShifts(start, end, shiftDuration);
+        await CreateShifts(desk, start, end, shiftDuration);
     }
 
     private async Task NotifyGather()
@@ -131,14 +144,14 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task RunScheduler()
     {
-        var schedule = await _scheduleRepository.ReadAsync(ScheduleStart);
+        var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
         if (schedule is null)
         {
             throw new KeyNotFoundException("Schedule not found in database.");
         }
 
         var results = await _scheduler.RunAsync(schedule);
-        await _scheduleRepository.AssignEmployees(ScheduleStart, results.CompleteSchedule);
+        await _scheduleRepository.AssignEmployees(Desk.Id, ScheduleStart, results.CompleteSchedule);
     }
 
     private async Task RunSchedulerAsync(object[] parameters)
@@ -182,7 +195,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task CommitSchedule()
     {
-        var schedule = await _scheduleRepository.ReadAsync(ScheduleStart);
+        var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
         if (schedule is null)
         {
             return;
@@ -203,8 +216,8 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task PublishSchedule()
     {
-        var data = await _scheduleRepository.GetScheduleData(ScheduleStart);
-        var schedule = await _scheduleRepository.ReadAsync(ScheduleStart);
+        var data = await _scheduleRepository.GetScheduleData(DeskId, ScheduleStart);
+        var schedule = await _scheduleRepository.ReadAsync((DeskId, ScheduleStart));
         if (schedule is null)
         {
             return;

@@ -60,27 +60,32 @@ public class AutoScheduleScanner : IAutoScheduleScanner
             await using var scope = _scopeFactory.CreateAsyncScope();
             
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Entered Scan Iteration");
-            
-            var latestSchedule =  await scope.ServiceProvider.GetRequiredService<IScheduleRepository>().ReadLatestAsync();
-            if (latestSchedule is null)
-            {
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Empty Latest Schedule, Breaking.");
-                
-                ShouldRun = false;
-                break;
-            }
 
-            if (latestSchedule.EndDateTime.Subtract(DateTime.Now) <= CatchRangeDuration)
+            var scheduleRepository = scope.ServiceProvider.GetRequiredService<IScheduleRepository>();
+            var allActiveLatestSchedules = await scheduleRepository.ReadAllActiveLatest();
+
+            foreach (var (desk, latestSchedule) in allActiveLatestSchedules)
             {
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Condition Met.");
+                if (latestSchedule is null)
+                {
+                    Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Empty Latest Schedule, Breaking.");
                 
-                var newStartDateTime = latestSchedule.EndDateTime;
-                var newEndDateTime = latestSchedule.EndDateTime.AddDays(DefaultScheduleDuration);
+                    ShouldRun = false;
+                    break;
+                }
                 
-                Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Crating and Starting Process...");
-                var newProcess = scope.ServiceProvider.GetRequiredService<IAutoScheduleProcess>();
-                ProcessInProgress = newProcess;
-                await newProcess.Run(newStartDateTime, newEndDateTime, DefaultShiftDuration);
+                if (latestSchedule.EndDateTime.Subtract(DateTime.Now) <= CatchRangeDuration)
+                {
+                    Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Condition Met.");
+                
+                    var newStartDateTime = latestSchedule.EndDateTime;
+                    var newEndDateTime = latestSchedule.EndDateTime.AddDays(DefaultScheduleDuration);
+                
+                    Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Crating and Starting Process...");
+                    var newProcess = scope.ServiceProvider.GetRequiredService<IAutoScheduleProcess>();
+                    ProcessInProgress = newProcess;
+                    await newProcess.Run(desk, newStartDateTime, newEndDateTime, DefaultShiftDuration);
+                }
             }
 
             Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Loop Delay until {DateTime.Now.Add(CycleDuration)}.");

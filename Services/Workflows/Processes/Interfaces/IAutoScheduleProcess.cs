@@ -1,4 +1,6 @@
-﻿namespace SchedulerApi.Services.Workflows.Processes.Interfaces;
+﻿using SchedulerApi.Models.Organization;
+
+namespace SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 public interface IAutoScheduleProcess : IProcess
 {
@@ -10,5 +12,5 @@ public interface IAutoScheduleProcess : IProcess
     public DateTime ScheduleEnd { get; }
     public int ScheduleShiftDuration { get; }
 
-    Task Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration);
+    Task Run(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration);
 }

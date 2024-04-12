@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.Workflows.Processes;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Steps;
@@ -21,8 +22,11 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
 
     public DbSet<Process> Processes { get; set; }
     public DbSet<AutoScheduleProcess> AutoScheduleProcesses { get; set; }
-
     public DbSet<Step> Steps { get; set; }
+
+    public DbSet<Unit> Units { get; set; }
+    public DbSet<Desk> Desks { get; set; }
+    public DbSet<DeskAssignment> DeskAssignments { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,11 +40,11 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
 
         modelBuilder.Entity<Shift>()
             .ToTable("Shifts")
-            .HasKey(shift => shift.StartDateTime);
+            .HasKey(shift => new { shift.DeskId, shift.StartDateTime });
 
         modelBuilder.Entity<ShiftException>()
             .ToTable("ShiftExceptions")
-            .HasKey(ex => new { ex.ShiftKey, ex.EmployeeId });
+            .HasKey(ex => new { ex.DeskId, ex.ShiftStartDateTime, ex.EmployeeId });
 
         modelBuilder.Entity<ShiftSwap>()
             .ToTable("ShiftSwaps")
@@ -54,6 +58,18 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         
         modelBuilder.Entity<Step>()
             .ToTable("Steps");
+
+        modelBuilder.Entity<Unit>()
+            .ToTable("Units")
+            .HasKey(unit => unit.Id);
+
+        modelBuilder.Entity<Desk>()
+            .ToTable("Desks")
+            .HasKey(desk => desk.Id);
+
+        modelBuilder.Entity<DeskAssignment>()
+            .ToTable("DeskAssignments")
+            .HasKey(da => new { da.DeskId, da.EmployeeId });
         
         //Relationships
         modelBuilder.Entity<Shift>()
@@ -64,12 +80,12 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Shift>()
             .HasMany<ShiftException>()
             .WithOne(ex => ex.Shift)
-            .HasForeignKey(ex => ex.ShiftKey);
-        
+            .HasForeignKey(ex => new { ex.DeskId, ex.ShiftStartDateTime });
+
         modelBuilder.Entity<Shift>()
             .HasMany<ShiftSwap>()
             .WithOne(swap => swap.Shift)
-            .HasForeignKey(swap => swap.ShiftKey);
+            .HasForeignKey(swap => new { swap.DeskId, swap.ShiftStart });
 
         modelBuilder.Entity<ShiftSwap>()
             .HasOne<Employee>(swap => swap.PreviousEmployee)
@@ -81,15 +97,53 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .WithMany()
             .HasForeignKey(step => step.ProcessId);
         
+        modelBuilder.Entity<Unit>()
+            .HasMany<Desk>()
+            .WithOne(desk => desk.Unit)
+            .HasForeignKey(desk => desk.UnitId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Unit>()
+            .HasMany<Employee>()
+            .WithOne(emp => emp.Unit)
+            .HasForeignKey(emp => emp.UnitId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Desk>()
+            .HasMany<DeskAssignment>()
+            .WithOne(da => da.Desk)
+            .HasForeignKey(da => da.DeskId);
+
+        modelBuilder.Entity<Employee>()
+            .HasMany<DeskAssignment>()
+            .WithOne(da => da.Employee)
+            .HasForeignKey(da => da.EmployeeId);
+
+        modelBuilder.Entity<Desk>()
+            .HasMany<Shift>()
+            .WithOne(shift => shift.Desk)
+            .HasForeignKey(shift => shift.DeskId);
+
+        modelBuilder.Entity<Desk>()
+            .HasMany<ShiftException>()
+            .WithOne(shift => shift.Desk)
+            .HasForeignKey(shift => shift.DeskId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Desk>()
+            .HasMany<ShiftSwap>()
+            .WithOne(swap => swap.Desk)
+            .HasForeignKey(swap => swap.DeskId)
+            .OnDelete(DeleteBehavior.NoAction);
         
         //Custom Indexes
         modelBuilder.Entity<Employee>()
             .HasIndex(emp => emp.Name)
             .HasDatabaseName("IX_Employees_Name");
-
+        
         modelBuilder.Entity<Shift>()
-            .HasIndex(shift => shift.ScheduleKey)
-            .HasDatabaseName("IX_Shifts_ScheduleKey");
+            .HasIndex(shift => shift.ScheduleStartDateTime)
+            .HasDatabaseName("IX_Shifts_ScheduleStartDateTime");
 
         modelBuilder.Entity<AutoScheduleProcess>()
             .HasIndex(autoProcess => autoProcess.ScheduleStart)
@@ -98,6 +152,14 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Step>()
             .HasIndex(step => step.ProcessId)
             .HasDatabaseName("IX_Steps_ProcessId");
+
+        modelBuilder.Entity<DeskAssignment>()
+            .HasIndex(da => da.DeskId)
+            .HasDatabaseName("IX_DeskAssignments_DeskId");
+
+        modelBuilder.Entity<DeskAssignment>()
+            .HasIndex(da => da.EmployeeId)
+            .HasDatabaseName("IX_DeskAssignments_EmployeeId");
         
         
         //ColumnTypes and Conversions

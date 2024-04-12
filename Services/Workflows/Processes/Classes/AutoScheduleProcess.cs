@@ -1,5 +1,6 @@
 ﻿using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
@@ -17,6 +18,19 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
     
     
     // SCHEDULE ATTRIBUTES
+
+    private Desk _desk;
+
+    public Desk Desk
+    {
+        get => _desk;
+        private set
+        {
+            _desk = value;
+            DeskId = value.Id;
+        }
+    }
+    public string DeskId { get; private set; }
     public DateTime ScheduleStart { get; private set; }
     public DateTime ScheduleEnd { get; private set; }
     public int ScheduleShiftDuration { get; private set; }
@@ -53,19 +67,20 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         base.Initialize(strategy);
     }
 
-    private async Task Activate(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    private async Task Activate(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
-        var parameters = new object[] { startDateTime, endDateTime, shiftDuration };
+        var parameters = new object[] { desk, startDateTime, endDateTime, shiftDuration };
         await Proceed(parameters);
     }
 
-    public async Task Run(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task Run(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
+        Desk = desk;
         ScheduleStart = startDateTime;
         ScheduleEnd = endDateTime;
         ScheduleShiftDuration = shiftDuration;
         
-        await Activate(startDateTime, endDateTime, shiftDuration);
+        await Activate(desk, startDateTime, endDateTime, shiftDuration);
 
         while (CurrentStep is not null)
         {
