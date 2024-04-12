@@ -4,8 +4,8 @@ namespace SchedulerApi.DAL.Repositories.Interfaces;
 
 public interface IShiftExceptionRepository : IRepository<ShiftException>
 {
-    Task<IEnumerable<ShiftException>> WhereAsync(DateTime shiftKey);
+    Task<IEnumerable<ShiftException>> WhereAsync(string deskId, DateTime shiftStartDateTime);
     Task<IEnumerable<ShiftException>> WhereAsync(int employeeId);
 
-    Task<IEnumerable<ShiftException>> GetScheduleExceptions(DateTime scheduleKey);
+    Task<IEnumerable<ShiftException>> GetScheduleExceptions(string deskId, DateTime scheduleStartDateTime);
 }

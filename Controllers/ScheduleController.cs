@@ -12,16 +12,11 @@ namespace SchedulerApi.Controllers;
 public class ScheduleController : Controller
 {
     private readonly IScheduleRepository _repository;
-    private readonly IShiftRepository _shiftRepository;
-    private readonly IEmployeeRepository _employeeRepository;
     private readonly IScheduler _scheduler;
 
-    public ScheduleController(IScheduleRepository repository, IShiftRepository shiftRepository, 
-        IEmployeeRepository employeeRepository, IScheduler scheduler)
+    public ScheduleController(IScheduleRepository repository, IScheduler scheduler)
     {
         _repository = repository;
-        _shiftRepository = shiftRepository;
-        _employeeRepository = employeeRepository;
         _scheduler = scheduler;
     }
 
@@ -36,20 +31,20 @@ public class ScheduleController : Controller
     }
 
 
-    [HttpGet("{key:datetime}")]
+    [HttpGet("{deskId}/{start:datetime}")]
     [Authorize]
-    public async Task<ActionResult<ScheduleDto?>> GetSchedule(DateTime key)
+    public async Task<ActionResult<ScheduleDto?>> GetSchedule(string deskId, DateTime start)
     {
-        var schedule = await _repository.ReadAsync(key);
+        var schedule = await _repository.ReadAsync((deskId, start));
         return schedule is null ? null : ScheduleDto.FromEntity(schedule);
     }
 
 
-    [HttpPost("/api/[controller]/Auto/{key:datetime}")]
+    [HttpPost("/api/[controller]/Auto/{deskId}/{start:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<ScheduleResultsDto>> RunScheduler(DateTime key, ScheduleDto schedule)
+    public async Task<ActionResult<ScheduleResultsDto>> RunScheduler(string deskId, DateTime start, ScheduleDto schedule)
     {
-        if (schedule.StartDateTime != key)
+        if (schedule.StartDateTime != start || schedule.Desk.Id != deskId)
         {
             return BadRequest("Entity-Key mismatch.");
         }
@@ -58,43 +53,43 @@ public class ScheduleController : Controller
     }
 
 
-    [HttpGet("/api/[controller]/Latest")]
+    [HttpGet("/api/[controller]/{deskId}/Latest")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<ScheduleDto?>> GetLatestSchedule()
+    public async Task<ActionResult<ScheduleDto?>> GetLatestSchedule(string deskId)
     {
-        var schedule = await _repository.ReadLatestAsync();
+        var schedule = await _repository.ReadLatestAsync(deskId);
         return schedule is null ? null : ScheduleDto.FromEntity(schedule);
     }
     
-    [HttpGet("/api/[controller]/NearestIncomplete")]
+    [HttpGet("/api/[controller]/{deskId}/NearestIncomplete")]
     [Authorize]
-    public async Task<ActionResult<FlatScheduleDto?>> GetNearestIncompleteSchedule()
+    public async Task<ActionResult<FlatScheduleDto?>> GetNearestIncompleteSchedule(string deskId)
     {
-        var schedule = await _repository.ReadNearestIncomplete();
+        var schedule = await _repository.ReadNearestIncomplete(deskId);
         return schedule is null ? null : FlatScheduleDto.FromEntity(schedule);
     }
     
     
-    [HttpGet("/api/[controller]/Data/{key:datetime}")]
+    [HttpGet("/api/[controller]/Data/{deskId}/{startDateTime:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<ScheduleDataDto>> GetScheduleData(DateTime key)
+    public async Task<ActionResult<ScheduleDataDto>> GetScheduleData(string deskId, DateTime startDateTime)
     {
-        var schedule = await _repository.ReadAsync(key);
+        var schedule = await _repository.ReadAsync((deskId, startDateTime));
         if (schedule is null)
         {
             return NotFound();
         }
         
-        var data = await _repository.GetScheduleData(key);
+        var data = await _repository.GetScheduleData(deskId, startDateTime);
         data.Schedule = schedule;
         return ScheduleDataDto.FromEntity(data);
     }
     
-    [HttpPost("/api/[controller]/Report/{key:datetime}")]
+    [HttpPost("/api/[controller]/Report/{deskId}/{startDateTime:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<ScheduleReportDto>> GetScheduleReport(DateTime key, ScheduleDto schedule)
+    public async Task<ActionResult<ScheduleReportDto>> GetScheduleReport(string deskId, DateTime startDateTime, ScheduleDto schedule)
     {
-        if (key != schedule.StartDateTime)
+        if (startDateTime != schedule.StartDateTime || deskId != schedule.Desk.Id)
         {
             return BadRequest();
         }
@@ -103,19 +98,19 @@ public class ScheduleController : Controller
         return ScheduleReportDto.FromEntity(report);
     }
 
-    [HttpGet("Current")]
+    [HttpGet("{deskId}/Current")]
     [Authorize]
-    public async Task<ScheduleDto?> GetCurrentSchedule()
+    public async Task<ScheduleDto?> GetCurrentSchedule(string deskId)
     {
-        var result = await _repository.ReadCurrentAsync();
+        var result = await _repository.ReadCurrentAsync(deskId);
         return result is null ? null : ScheduleDto.FromEntity(result);
     }
     
-    [HttpGet("Next")]
+    [HttpGet("{deskId}/Next")]
     [Authorize]
-    public async Task<ScheduleDto?> GetNextSchedule()
+    public async Task<ScheduleDto?> GetNextSchedule(string deskId)
     {
-        var result = await _repository.ReadNextAsync();
+        var result = await _repository.ReadNextAsync(deskId);
         return result is null ? null : ScheduleDto.FromEntity(result);
     }
     
@@ -128,17 +123,17 @@ public class ScheduleController : Controller
         return Ok();
     }
 
-    [HttpPatch("Assign/{key:datetime}")]
+    [HttpPatch("Assign/{deskId}/{startDateTime:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> AssignEmployees(DateTime key, ScheduleDto schedule)
+    public async Task<IActionResult> AssignEmployees(string deskId, DateTime startDateTime, ScheduleDto schedule)
     {
-        if (schedule.StartDateTime != key)
+        if (schedule.StartDateTime != startDateTime || schedule.Desk.Id != deskId)
         {
             return BadRequest("schedule-key mismatch");
         }
         
         var assignedSchedule = schedule.ToEntity();
-        await _repository.AssignEmployees(key, assignedSchedule);
+        await _repository.AssignEmployees(deskId, startDateTime, assignedSchedule);
         return Ok();
     }
     

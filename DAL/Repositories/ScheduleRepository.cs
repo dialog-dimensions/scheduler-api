@@ -3,6 +3,7 @@ using SchedulerApi.DAL.Repositories.BaseClasses;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Factories;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Models.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 
@@ -30,8 +31,18 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
 
     public override async Task<Schedule?> ReadAsync(object key)
     {
+        if (key is not (string deskId, DateTime startDateTime))
+        {
+            throw new ArgumentException("schedule key is a composite key of deskId and startDateTime");
+        }
+        
         var shifts = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == (DateTime)key)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.ScheduleStartDateTime == startDateTime)
+            .Where(shift => shift.Desk.Id == deskId)
             .ToListAsync();
 
         return shifts.Count == 0 ? null : _factory.FromShifts(shifts);
@@ -39,11 +50,16 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
 
     public override async Task<IEnumerable<Schedule>> ReadAllAsync()
     {
-        var allShifts = await Context.Shifts.ToListAsync();
+        var allShifts = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .ToListAsync();
 
         return (allShifts.Count == 0 
             ? new List<Schedule>() 
-            : allShifts.GroupBy(shift => shift.ScheduleKey).Select(_factory.FromShifts))!;
+            : allShifts.GroupBy(shift => (shift.ScheduleStartDateTime, shift.Desk.Id)).Select(_factory.FromShifts))!;
     }
 
     // public async Task<IEnumerable<Schedule>> ReadAllFutureAsync()
@@ -57,87 +73,140 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
     //         : allFutureSchedulesShifts.GroupBy(s => s.ScheduleKey).Select(_factory.FromShifts))!;
     // }
 
-    public async Task<Schedule?> ReadLatestAsync()
+    public async Task<Schedule?> ReadLatestAsync(string deskId)
     {
-        var latestScheduleKey = await Context.Shifts
-            .Select(shift => shift.ScheduleKey)
+        var latestScheduleStartDateTime = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Select(shift => shift.ScheduleStartDateTime)
             .Distinct()
             .OrderByDescending(key => key)
             .FirstOrDefaultAsync();
 
-        if (latestScheduleKey == default)
+        if (latestScheduleStartDateTime == default)
         {
             return null;
         }
         
         var latestShifts = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == latestScheduleKey)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Where(shift => shift.ScheduleStartDateTime == latestScheduleStartDateTime)
             .ToListAsync();
 
         return _factory.FromShifts(latestShifts.ToList());
     }
 
-    public async Task<Schedule?> ReadCurrentAsync()
+    public async Task<Dictionary<Desk, Schedule?>> ReadAllActiveLatest()
     {
-        var greatestScheduleKeySmallerThanNow = await Context.Shifts
-            .Select(shift => shift.ScheduleKey)
-            .Where(key => key < DateTime.Now)
+        var desks = await Context.Desks
+            .Include(desk => desk.Unit)
+            .Where(d => d.Active)
+            .ToListAsync();
+
+        var result = new Dictionary<Desk, Schedule?>();
+        foreach (var desk in desks)
+        {
+            result[desk] = await ReadLatestAsync(desk.Id);
+        }
+
+        return result;
+    }
+
+    public async Task<Schedule?> ReadCurrentAsync(string deskId)
+    {
+        var greatestScheduleStartSmallerThanNow = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Where(shift => shift.ScheduleStartDateTime < DateTime.Now)
+            .Select(shift => shift.ScheduleStartDateTime)
             .MaxAsync();
 
-        var shiftsOfSuspectKey = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == greatestScheduleKeySmallerThanNow)
+        var shiftsOfSuspectStart = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Where(shift => shift.ScheduleStartDateTime == greatestScheduleStartSmallerThanNow)
             .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
             .OrderBy(shift => shift.StartDateTime)
             .ToListAsync();
 
-        var suspectScheduleStart = shiftsOfSuspectKey[0].StartDateTime;
-        var suspectScheduleEnd = shiftsOfSuspectKey[^1].EndDateTime;
+        var suspectScheduleStart = shiftsOfSuspectStart[0].StartDateTime;
+        var suspectScheduleEnd = shiftsOfSuspectStart[^1].EndDateTime;
 
         if (suspectScheduleStart < DateTime.Now && DateTime.Now < suspectScheduleEnd)
         {
-            return _factory.FromShifts(shiftsOfSuspectKey);
+            return _factory.FromShifts(shiftsOfSuspectStart);
         }
 
         return null;
     }
     
-    public async Task<Schedule?> ReadNextAsync()
+    public async Task<Schedule?> ReadNextAsync(string deskId)
     {
-        var scheduleKeysGreaterThanNow =
-            await Context.Shifts.Select(shift => shift.ScheduleKey).Where(key => key > DateTime.Now).ToListAsync();
+        var scheduleStartDateTimesGreaterThanNow = 
+            await Context.Shifts
+                .Include(shift => shift.Desk)
+                .ThenInclude(desk => desk.Unit)
+                .Include(shift => shift.Employee)
+                .ThenInclude(emp => emp.Unit)
+                .Where(shift => shift.Desk.Id == deskId)
+                .Where(shift => shift.ScheduleStartDateTime > DateTime.Now)
+                .Select(shift => shift.ScheduleStartDateTime)
+                .ToListAsync();
 
-        if (scheduleKeysGreaterThanNow.Count == 0)
+        if (scheduleStartDateTimesGreaterThanNow.Count == 0)
         {
             return null;
         }
         
-        var smallestScheduleKeyGreaterThanNow = scheduleKeysGreaterThanNow.Min();
+        var smallestScheduleStartGreaterThanNow = scheduleStartDateTimesGreaterThanNow.Min();
 
         var shifts = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == smallestScheduleKeyGreaterThanNow)
+            .Where(shift => shift.ScheduleStartDateTime == smallestScheduleStartGreaterThanNow)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
             .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
             .OrderBy(shift => shift.StartDateTime)
             .ToListAsync();
 
+        // TODO: Employee unit not included, but employee is nullable, need to resolve.
+        
         return _factory.FromShifts(shifts);
     }
 
-    public async Task<ScheduleData> GetScheduleData(DateTime scheduleKey)
+    public async Task<ScheduleData> GetScheduleData(string deskId, DateTime scheduleStartDateTime)
     {
-        return await _gatherer.GatherDataAsync(scheduleKey);
+        return await _gatherer.GatherDataAsync(deskId, scheduleStartDateTime);
     }
 
     public async Task<ScheduleReport> GetScheduleReport(Schedule schedule)
     {
-        var data = await _gatherer.GatherDataAsync(schedule.StartDateTime);
+        var data = await _gatherer.GatherDataAsync(schedule.DeskId, schedule.StartDateTime);
         data.Schedule = schedule;
         return _reportBuilder.BuildReport(data);
     }
 
-    public async Task AssignEmployees(DateTime key, Schedule assignedSchedule)
+    public async Task AssignEmployees(string deskId, DateTime scheduleStart, Schedule assignedSchedule)
     {
         var shiftsFromDatabase = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == key)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Where(shift => shift.ScheduleStartDateTime == scheduleStart)
             .OrderBy(shift => shift.StartDateTime)
             .ToListAsync();
         
@@ -149,23 +218,33 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
         await Context.SaveChangesAsync();
     }
 
-    public async Task<Schedule?> ReadNearestIncomplete()
+    public async Task<Schedule?> ReadNearestIncomplete(string deskId)
     {
-        var nearestIncompleteKey = await Context.Shifts
+        var nearestIncompleteStartDateTime = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
             .Where(shift => shift.EmployeeId == null || shift.EmployeeId == 0)
-            .Select(shift => shift.ScheduleKey)
+            .Select(shift => shift.ScheduleStartDateTime)
             .Distinct()
             .Where(key => key > DateTime.Now)
             .OrderByDescending(key => key)
             .FirstOrDefaultAsync();
 
-        if (nearestIncompleteKey == default)
+        if (nearestIncompleteStartDateTime == default)
         {
             return null;
         }
         
         var latestShifts = await Context.Shifts
-            .Where(shift => shift.ScheduleKey == nearestIncompleteKey)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.Desk.Id == deskId)
+            .Where(shift => shift.ScheduleStartDateTime == nearestIncompleteStartDateTime)
             .ToListAsync();
 
         return _factory.FromShifts(latestShifts.ToList());

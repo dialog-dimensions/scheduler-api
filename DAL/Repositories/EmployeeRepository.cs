@@ -19,15 +19,21 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
 
     public override async Task<Employee?> ReadAsync(object key)
     {
-        var result = await Context.Employees.FindAsync(key);
+        if (key is not int id)
+        {
+            throw new ArgumentException("unexpected key type.");
+        }
+        
+        var result = await Context.Employees
+            .Include(emp => emp.Unit)
+            .FirstOrDefaultAsync(emp => emp.Id == id);
         return result;
     }
 
-    public override async Task<IEnumerable<Employee>> ReadAllAsync()
-    {
-        var result = await Context.Employees.ToListAsync();
-        return result;
-    }
+    public override async Task<IEnumerable<Employee>> ReadAllAsync() => 
+        await Context.Employees
+            .Include(emp => emp.Unit)
+            .ToListAsync();
 
     public override async Task DeleteAsync(object key)
     {
@@ -54,7 +60,9 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
 
     public async Task<IEnumerable<Employee>> ReadAllActiveAsync()
     {
-        var result = await Context.Employees.Where(emp => emp.Active).ToListAsync();
+        var result = await Context.Employees
+            .Include(emp => emp.Unit)
+            .Where(emp => emp.Active).ToListAsync();
         return result;
     }
 
@@ -63,7 +71,12 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
         // TODO: implement in O(1).
         
         var result = new HashSet<Employee>();
-        var allShifts = await Context.Shifts.Include(shift => shift.Employee).ToListAsync();
+        var allShifts = await Context.Shifts
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .ToListAsync();
         foreach (var shift in allShifts)
         {
             if (shift.Employee is null) continue;

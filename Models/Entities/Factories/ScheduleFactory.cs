@@ -1,4 +1,6 @@
-﻿namespace SchedulerApi.Models.Entities.Factories;
+﻿using SchedulerApi.Models.Organization;
+
+namespace SchedulerApi.Models.Entities.Factories;
 
 public class ScheduleFactory : IScheduleFactory
 {
@@ -7,12 +9,14 @@ public class ScheduleFactory : IScheduleFactory
         var orderedShifts = shifts.OrderBy(shift => shift.StartDateTime).ToList();
         if (orderedShifts.Count == 0) return null;
 
+        var desk = orderedShifts[0].Desk;
         var startDateTime = orderedShifts[0].StartDateTime;
         var endDateTime = orderedShifts[^1].EndDateTime;
         var shiftDuration = (int)orderedShifts[0].EndDateTime.Subtract(startDateTime).TotalHours;
 
         var result = new Schedule
         {
+            Desk = desk,
             StartDateTime = startDateTime,
             EndDateTime = endDateTime,
             ShiftDuration = shiftDuration
@@ -22,10 +26,11 @@ public class ScheduleFactory : IScheduleFactory
         return result;
     }
 
-    public Schedule FromParameters(DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public Schedule FromParameters(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var result = new Schedule
         {
+            Desk = desk,
             StartDateTime = startDateTime, 
             EndDateTime = endDateTime, 
             ShiftDuration = shiftDuration
@@ -37,7 +42,8 @@ public class ScheduleFactory : IScheduleFactory
         {
             result.Add(new Shift
             {
-                ScheduleKey = startDateTime, 
+                ScheduleStartDateTime = startDateTime, 
+                Desk = desk,
                 StartDateTime = shiftStartDateTime, 
                 EndDateTime = shiftEndDateTime
             });
@@ -54,7 +60,7 @@ public class ScheduleFactory : IScheduleFactory
         var end = schedule.EndDateTime;
         var shiftDuration = schedule.ShiftDuration;
 
-        var result = new Schedule { StartDateTime = start, EndDateTime = end, ShiftDuration = shiftDuration };
+        var result = new Schedule { Desk = schedule.Desk, StartDateTime = start, EndDateTime = end, ShiftDuration = shiftDuration };
         result.AddRange(schedule.Select(shift => shift.Copy()));
         return result;
     }

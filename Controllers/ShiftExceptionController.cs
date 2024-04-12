@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
+using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 
@@ -37,7 +38,16 @@ public class
     [Authorize(Roles = "Admin,Manager")]
     public async Task<ActionResult<IEnumerable<ShiftExceptionDto>>> GetExceptions()
     {
-        var exceptions = await _context.Exceptions.ToListAsync();
+        var exceptions = await _context.Exceptions
+            .Include(ex => ex.Shift)
+            .ThenInclude(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .ToListAsync();
+        
         var dtos = exceptions.Select(ShiftExceptionDto.FromEntity);
         return dtos.ToList();
     }
@@ -55,26 +65,43 @@ public class
 
         if (role is "Employee" & userId != employeeId) return Forbid();
 
-        var exceptions = await _context.Exceptions.Where(ex => ex.EmployeeId == employeeId).ToListAsync();
+        var exceptions = await _context.Exceptions
+            .Where(ex => ex.EmployeeId == employeeId)
+            .Include(ex => ex.Shift)
+            .ThenInclude(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .ToListAsync();
+        
         var result = exceptions.Select(ShiftExceptionDto.FromEntity);
         return result.ToList();
     }
 
-    [HttpGet("{scheduleKey:datetime}")]
+    [HttpGet("{deskId}/{scheduleStart:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<ActionResult<IEnumerable<ShiftExceptionDto>>> GetScheduleExceptions(DateTime scheduleKey)
+    public async Task<ActionResult<IEnumerable<ShiftExceptionDto>>> GetScheduleExceptions(string deskId, DateTime scheduleStart)
     {
         var exceptions = await _context.Exceptions
             .Include(ex => ex.Shift)
-            .Where(ex => ex.Shift.ScheduleKey == scheduleKey)
+            .ThenInclude(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(ex => ex.Shift.ScheduleStartDateTime == scheduleStart)
+            .Where(ex => ex.Shift.Desk.Id == deskId)
             .ToListAsync();
         var result = exceptions.Select(ShiftExceptionDto.FromEntity);
         return result.ToList();
     }
     
-    [HttpGet("{scheduleKey:datetime}/{employeeId:int}")]
+    [HttpGet("{deskId}/{scheduleStart:datetime}/{employeeId:int}")]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<ShiftExceptionDto>>> GetScheduleEmployeeExceptions(DateTime scheduleKey, int employeeId)
+    public async Task<ActionResult<IEnumerable<ShiftExceptionDto>>> GetScheduleEmployeeExceptions(string deskId, DateTime scheduleStart, int employeeId)
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         var parseUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
@@ -86,7 +113,14 @@ public class
         
         var exceptions = await _context.Exceptions
             .Include(ex => ex.Shift)
-            .Where(ex => ex.Shift.ScheduleKey == scheduleKey)
+            .ThenInclude(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(ex => ex.Shift.ScheduleStartDateTime == scheduleStart)
+            .Where(ex => ex.Shift.Desk.Id == deskId)
             .Where(ex => ex.EmployeeId == employeeId)
             .ToListAsync();
         var result = exceptions.Select(ShiftExceptionDto.FromEntity);
@@ -164,7 +198,8 @@ public class
     [Authorize]
     public async Task<IActionResult> PostExceptions(List<ShiftExceptionDto> exceptions)
     {
-        DateTime? scheduleKey = null;
+        string? deskId = null;
+        DateTime? scheduleStartDateTime = null;
         
         var parseUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
         if (!parseUserId)
@@ -193,14 +228,28 @@ public class
         bool sendAck = false;
         if (employee.Active)
         {
-            var arbitraryShiftKey = exceptions.First().ShiftKey;
-            var arbitraryShift = await _context.Shifts.FindAsync(arbitraryShiftKey);
+            var arbitraryShiftStartDateTime = exceptions.First().ShiftStartDateTime;
+            var arbitraryShiftDeskId = exceptions.First().Desk.Id;
+            var arbitraryShift = await _context.Shifts
+                .Include(shift => shift.Desk)
+                .FirstOrDefaultAsync(
+                    shift => shift.StartDateTime == arbitraryShiftStartDateTime && 
+                             shift.Desk.Id == arbitraryShiftDeskId
+                             );
             if (arbitraryShift is not null)
             {
-                scheduleKey = arbitraryShift.ScheduleKey;
+                deskId = arbitraryShift.Desk.Id;
+                scheduleStartDateTime = arbitraryShift.ScheduleStartDateTime;
                 var firstSubmission = !await _context.Exceptions
                     .Include(ex => ex.Shift)
-                    .Where(ex => ex.Shift.ScheduleKey == scheduleKey)
+                    .ThenInclude(shift => shift.Desk)
+                    .ThenInclude(desk => desk.Unit)
+                    .Include(ex => ex.Desk)
+                    .ThenInclude(desk => desk.Unit)
+                    .Include(ex => ex.Employee)
+                    .ThenInclude(emp => emp.Unit)
+                    .Where(ex => ex.Shift.ScheduleStartDateTime == scheduleStartDateTime)
+                    .Where(ex => ex.Shift.Desk.Id == deskId)
                     .AnyAsync(ex => ex.EmployeeId == userId);
                 sendAck = firstSubmission;
             }
@@ -208,13 +257,13 @@ public class
         
         foreach (var exception in exceptions)
         {
-            var shift = await _context.Shifts.FindAsync(exception.ShiftKey);
+            var shift = await _context.Shifts.FindAsync(exception.Desk.Id, exception.ShiftStartDateTime);
             if (shift is null)
             {
                 return NotFound(new { Message = "Shift not found in database." });
             }
         
-            var exceptionAlreadyExists = await _context.Exceptions.FindAsync(exception.ShiftKey, exception.EmployeeId) is not null;
+            var exceptionAlreadyExists = await _context.Exceptions.FindAsync(exception.Desk.Id, exception.ShiftStartDateTime, exception.EmployeeId) is not null;
             if (exceptionAlreadyExists)
             {
                 return BadRequest("Exception already exists for employee for shift.");
@@ -231,7 +280,7 @@ public class
         if (sendAck)
         {
             Console.WriteLine($"{DateTime.Now:dd-MM HH:mm:ss} Sending file ack back to user...");
-            var runningProcess = await _processRepository.ReadRunningAsync(scheduleKey!.Value);
+            var runningProcess = await _processRepository.ReadRunningAsync(deskId!, scheduleStartDateTime!.Value);
             if (runningProcess is not null)
             {
                 var fileWindowEnd = runningProcess.FileWindowEnd;
@@ -248,9 +297,9 @@ public class
         return Ok();
     }
 
-    [HttpPut("{scheduleKey:datetime}/{employeeId:int}")]
+    [HttpPut("{deskId}/{scheduleStart:datetime}/{employeeId:int}")]
     [Authorize]
-    public async Task<IActionResult> PutExceptions(DateTime scheduleKey, int employeeId, List<ShiftExceptionDto> exceptions)
+    public async Task<IActionResult> PutExceptions(string deskId ,DateTime scheduleStart, int employeeId, List<ShiftExceptionDto> exceptions)
     {
         var parseUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
         if (!parseUserId)
@@ -280,7 +329,7 @@ public class
             return NotFound(new { Message = "Employee not found in database." });
         }
 
-        var schedule = await _scheduleRepository.ReadAsync(scheduleKey);
+        var schedule = await _scheduleRepository.ReadAsync((deskId, scheduleStart));
         if (schedule is null)
         {
             return NotFound(new { Message = "Schedule not found in database." });
@@ -288,8 +337,15 @@ public class
         
         var scheduleEmployeeExceptions = await _context.Exceptions
             .Include(ex => ex.Shift)
+            .ThenInclude(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(ex => ex.Employee)
+            .ThenInclude(emp => emp.Unit)
             .Where(ex => ex.EmployeeId == employeeId)
-            .Where(ex => ex.Shift.ScheduleKey == scheduleKey)
+            .Where(ex => ex.Shift.ScheduleStartDateTime == scheduleStart)
+            .Where(ex => ex.Shift.Desk.Id == deskId)
             .ToListAsync();
         
         _context.Exceptions.RemoveRange(scheduleEmployeeExceptions);
@@ -300,9 +356,9 @@ public class
     }
     
     
-    [HttpDelete("{key}")]
+    [HttpDelete("{deskId}/{shiftStart:datetime}/{employeeId:int}")]
     [Authorize]
-    public async Task<IActionResult> DeleteException((DateTime, int) key)
+    public async Task<IActionResult> DeleteException(string deskId, DateTime shiftStart, int employeeId)
     {
         var parseUserId = int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var userId);
         if (!parseUserId) return Unauthorized(new { Message = "Invalid token." });
@@ -310,13 +366,13 @@ public class
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
         if (role is not ("Employee" or "Manager" or "Admin")) return Unauthorized(new { Message = "Invalid token." });
 
-        var exception = await _context.Exceptions.FindAsync(key);
+        var exception = await _context.Exceptions.FindAsync(deskId, shiftStart, employeeId);
         if (exception is null) return NotFound(new { Message = "Exception not found in database." });
 
         if (exception.EmployeeId != userId) return Forbid();
 
-        var shift = await _context.Shifts.FindAsync(exception.ShiftKey);
-        if (shift!.ScheduleKey < DateTime.Now) 
+        var shift = await _context.Shifts.FindAsync(exception.DeskId, exception.ShiftStartDateTime);
+        if (shift!.ScheduleStartDateTime < DateTime.Now) 
             return UnprocessableEntity("Unable to delete non-future exceptions.");
 
         _context.Exceptions.Remove(exception);

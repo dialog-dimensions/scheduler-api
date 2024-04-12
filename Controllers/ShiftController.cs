@@ -16,11 +16,11 @@ public class ShiftController : Controller
         _repository = repository;
     }
 
-    [HttpPatch("/api/[controller]/UpdateEmployee/{key:datetime}")]
+    [HttpPatch("/api/[controller]/UpdateEmployee/{deskId}/{start:datetime}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> UpdateEmployee(DateTime key, FlatShiftEmployeeDto flat)
+    public async Task<IActionResult> UpdateEmployee(string deskId, DateTime start, FlatShiftEmployeeDto flat)
     {
-        if (key != flat.ShiftKey)
+        if (start != flat.ShiftStart || deskId != flat.Desk.Id)
         {
             return BadRequest(new { Message = "DTO does not match shift key." });
         }
@@ -30,7 +30,7 @@ public class ShiftController : Controller
             return BadRequest(new { Message = "Cannot remove assignment without a replacement." });
         }
 
-        var shift = await _repository.ReadAsync(key);
+        var shift = await _repository.ReadAsync((deskId, start));
         if (shift is null)
         {
             return NotFound("Shift not found in database.");
@@ -38,7 +38,7 @@ public class ShiftController : Controller
 
         try
         {
-            await _repository.UpdateShiftEmployeeAsync(key, flat.Employee);
+            await _repository.UpdateShiftEmployeeAsync(deskId, start, flat.Employee);
         }
         catch (Exception ex)
         {
@@ -61,9 +61,10 @@ public class ShiftController : Controller
         foreach (var flat in flats)
         {
             await _repository.UpdateShiftEmployeeAsync(
-                flat.ShiftKey, 
+                flat.Desk.Id,
+                flat.ShiftStart, 
                 flat.Employee ?? 
-                throw new InvalidOperationException($"Flat {flat.ShiftKey} has an empty employee.")
+                throw new InvalidOperationException($"Flat {flat.Desk.Id}-{flat.ShiftStart} has an empty employee.")
                 );
         }
         

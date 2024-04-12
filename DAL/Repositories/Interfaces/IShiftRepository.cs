@@ -5,5 +5,5 @@ namespace SchedulerApi.DAL.Repositories.Interfaces;
 
 public interface IShiftRepository : IRepository<Shift>
 {
-    Task UpdateShiftEmployeeAsync(DateTime shiftKey, Employee employee);
+    Task UpdateShiftEmployeeAsync(string deskId, DateTime shiftStart, Employee employee);
 }

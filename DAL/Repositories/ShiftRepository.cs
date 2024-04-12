@@ -3,6 +3,7 @@ using SchedulerApi.DAL.Repositories.BaseClasses;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.DAL.Repositories;
 
@@ -19,17 +20,28 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
 
     public override async Task<Shift?> ReadAsync(object key)
     {
-        if (key is not DateTime shiftKey)
+        if (key is not (string deskId, DateTime shiftStart))
         {
-            return null;
+            throw new ArgumentException("composite key is not of expected type.");
         }
 
-        return await Context.Shifts.Include(shift => shift.Employee).FirstOrDefaultAsync(shift => shift.StartDateTime == shiftKey);
+        return await Context.Shifts
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Where(shift => shift.DeskId == deskId)
+            .FirstOrDefaultAsync(shift => shift.StartDateTime == shiftStart);
     }
 
     public override async Task<IEnumerable<Shift>> ReadAllAsync()
     {
-        return await Context.Shifts.Include(shift => shift.Employee).ToListAsync();
+        return await Context.Shifts
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .ToListAsync();
     }
 
     public override Task DeleteAsync(object key)
@@ -42,9 +54,15 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
         throw new NotImplementedException();
     }
 
-    public async Task UpdateShiftEmployeeAsync(DateTime shiftKey, Employee employee)
+    public async Task UpdateShiftEmployeeAsync(string deskId, DateTime shiftStart, Employee employee)
     {
-        var shift = await Context.Shifts.FirstOrDefaultAsync(shift => shift.StartDateTime == shiftKey);
+        var shift = await Context.Shifts
+            .Include(shift => shift.Desk)
+            .ThenInclude(desk => desk.Unit)
+            .Include(shift => shift.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Where(shift => shift.DeskId == deskId)
+            .FirstOrDefaultAsync(shift => shift.StartDateTime == shiftStart);
         if (shift == null) 
         {
             throw new KeyNotFoundException("Shift not found in database.");
