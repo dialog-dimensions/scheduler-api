@@ -146,6 +146,10 @@ builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IShiftExceptionRepository, ShiftExceptionRepository>();
+builder.Services.AddScoped<IDeskRepository, DeskRepository>();
+builder.Services.AddScoped<IUnitRepository, UnitRepository>();
+
+
 
 
 builder.Services.AddTransient<IQuotaCalculator, QuotaCalculator>();
