@@ -30,7 +30,7 @@ public class Scheduler : IScheduler
 
     private async Task Initialize(Schedule schedule)
     {
-        var data = await _gatherer.GatherDataAsync(schedule.StartDateTime);
+        var data = await _gatherer.GatherDataAsync(schedule.DeskId, schedule.StartDateTime);
         data.Schedule = _factory.Copy(schedule);
         SetContext(data);
         InitializeComponents();
@@ -100,31 +100,31 @@ public class Scheduler : IScheduler
         }
     }
 
-    private bool CheckPossibleSwitch(DateTime iKey, DateTime jKey)
+    private bool CheckPossibleSwitch(DateTime iStartDateTime, DateTime jStartDateTime)
     {
-        var iEmployee = _assigner.UnAssign(iKey);
-        var jEmployee = _assigner.UnAssign(jKey);
+        var iEmployee = _assigner.UnAssign(iStartDateTime);
+        var jEmployee = _assigner.UnAssign(jStartDateTime);
 
-        var iScore = _assignmentScorer.ScoreAssignment(iKey, iEmployee!.Id);
-        var jScore = _assignmentScorer.ScoreAssignment(jKey, jEmployee!.Id);
+        var iScore = _assignmentScorer.ScoreAssignment(Data!.Schedule.DeskId, iStartDateTime, iEmployee!.Id);
+        var jScore = _assignmentScorer.ScoreAssignment(Data.Schedule.DeskId, jStartDateTime, jEmployee!.Id);
 
-        var ijScore = _assignmentScorer.ScoreAssignment(iKey, jEmployee.Id);
-        var jiScore = _assignmentScorer.ScoreAssignment(jKey, iEmployee.Id);
+        var ijScore = _assignmentScorer.ScoreAssignment(Data!.Schedule.DeskId, iStartDateTime, jEmployee.Id);
+        var jiScore = _assignmentScorer.ScoreAssignment(Data!.Schedule.DeskId, jStartDateTime, iEmployee.Id);
 
         var result = ijScore + jiScore > iScore + jScore;
 
-        _assigner.Assign(iKey, iEmployee.Id);
-        _assigner.Assign(jKey, jEmployee.Id);
+        _assigner.Assign(iStartDateTime, iEmployee.Id);
+        _assigner.Assign(jStartDateTime, jEmployee.Id);
 
         return result;
     }
 
-    private void SwitchAssignments(DateTime iKey, DateTime jKey)
+    private void SwitchAssignments(DateTime iStartDateTime, DateTime jStartDateTime)
     {
-        var iEmployee = _assigner.UnAssign(iKey);
-        var jEmployee = _assigner.UnAssign(jKey);
-        Console.WriteLine($"really {iEmployee.Id} in {iKey} and {jEmployee.Id} in {jKey}");
-        _assigner.Assign(iKey, jEmployee!.Id);
-        _assigner.Assign(jKey, iEmployee!.Id);
+        var iEmployee = _assigner.UnAssign(iStartDateTime);
+        var jEmployee = _assigner.UnAssign(jStartDateTime);
+        Console.WriteLine($"really {iEmployee.Id} in {iStartDateTime} and {jEmployee.Id} in {jStartDateTime}");
+        _assigner.Assign(iStartDateTime, jEmployee!.Id);
+        _assigner.Assign(jStartDateTime, iEmployee!.Id);
     }
 }

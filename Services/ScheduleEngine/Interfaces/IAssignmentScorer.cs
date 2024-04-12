@@ -10,5 +10,5 @@ public interface IAssignmentScorer
 
     void Initialize(ScheduleData data);
     
-    double ScoreAssignment(DateTime shiftKey, int employeeId);
+    double ScoreAssignment(string deskId, DateTime shiftStartDateTime, int employeeId);
 }

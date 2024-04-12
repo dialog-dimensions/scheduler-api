@@ -36,13 +36,13 @@ public class AssignmentScorer : IAssignmentScorer
         return _weights.GetValue<double>(parameter);
     }
 
-    public double ScoreAssignment(DateTime shiftKey, int employeeId)
+    public double ScoreAssignment(string deskId, DateTime shiftStartDateTime, int employeeId)
     {
         if (!Ready) return 0.0;
         
-        var shift = Data!.FindShift(shiftKey)!;
+        var shift = Data!.FindShift(deskId, shiftStartDateTime)!;
         var employee = Data.FindEmployee(employeeId)!;
-        var exception = Data.FindException(shiftKey, employeeId);
+        var exception = Data.FindException(deskId, shiftStartDateTime, employeeId);
             
         var result = 0.0;
 
@@ -101,14 +101,14 @@ public class AssignmentScorer : IAssignmentScorer
         
         bool CheckPreviousDoubleShifts()
         {
-            var previousShiftKey = shiftKey.AddHours(-Data.Schedule.ShiftDuration);
-            var previousShift = Data.FindShift(previousShiftKey);
+            var previousShiftStart = shiftStartDateTime.AddHours(-Data.Schedule.ShiftDuration);
+            var previousShift = Data.FindShift(deskId, previousShiftStart);
         
             if (previousShift is null) return false;
         
             if (previousShift.Employee?.Equals(employee) ?? false)
             {
-                return !CheckBothShiftsHaveOnPreferences(shiftKey, previousShiftKey);
+                return !CheckBothShiftsHaveOnPreferences(shiftStartDateTime, previousShiftStart);
             }
         
             return false;
@@ -116,23 +116,23 @@ public class AssignmentScorer : IAssignmentScorer
         
         bool CheckNextDoubleShifts()
         {
-            var nextShiftKey = shiftKey.AddHours(Data.Schedule.ShiftDuration);
-            var nextShift = Data.FindShift(nextShiftKey);
+            var nextShiftStart = shiftStartDateTime.AddHours(Data.Schedule.ShiftDuration);
+            var nextShift = Data.FindShift(deskId, nextShiftStart);
 
             if (nextShift is null) return false;
 
             if (nextShift.Employee?.Equals(employee) ?? false)
             {
-                return !CheckBothShiftsHaveOnPreferences(shiftKey, nextShiftKey);
+                return !CheckBothShiftsHaveOnPreferences(shiftStartDateTime, nextShiftStart);
             }
 
             return false;
         }
         
-        bool CheckBothShiftsHaveOnPreferences(DateTime shiftKey1, DateTime shiftKey2)
+        bool CheckBothShiftsHaveOnPreferences(DateTime shiftStart1, DateTime shiftStart2)
         {
-            var exception1 = Data.FindException(shiftKey1, employeeId);
-            var exception2 = Data.FindException(shiftKey2, employeeId);
+            var exception1 = Data.FindException(deskId, shiftStart1, employeeId);
+            var exception2 = Data.FindException(deskId, shiftStart2, employeeId);
 
             return exception1 is { ExceptionType: ExceptionType.OnPreference } &
                    exception2 is { ExceptionType: ExceptionType.OnPreference };

@@ -12,5 +12,5 @@ public interface IEmployeeComparer : IComparer<Employee>
     bool Ready { get; }
 
     void Initialize(ScheduleData data);
-    void SetShift(DateTime shiftKey);
+    void SetShift(string deskId, DateTime shiftStart);
 }

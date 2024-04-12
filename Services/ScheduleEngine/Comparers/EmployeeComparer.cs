@@ -33,10 +33,10 @@ public class EmployeeComparer : IEmployeeComparer
         Shift = default;
     }
 
-    public void SetShift(DateTime shiftKey)
+    public void SetShift(string deskId, DateTime shiftStart)
     {
         if (!Initialized) return;
-        Shift = Data!.FindShift(shiftKey)!;
+        Shift = Data!.FindShift(deskId, shiftStart)!;
     }
     
     
@@ -49,8 +49,8 @@ public class EmployeeComparer : IEmployeeComparer
             return 0;
         }
 
-        var xScore = Scorer.ScoreAssignment(Shift!.StartDateTime, x!.Id);
-        var yScore = Scorer.ScoreAssignment(Shift.StartDateTime, y!.Id);
+        var xScore = Scorer.ScoreAssignment(Shift!.Desk.Id, Shift!.StartDateTime, x!.Id);
+        var yScore = Scorer.ScoreAssignment(Shift!.Desk.Id, Shift.StartDateTime, y!.Id);
 
         return double.Sign(yScore - xScore);
     }

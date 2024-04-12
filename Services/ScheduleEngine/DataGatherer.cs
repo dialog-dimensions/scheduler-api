@@ -18,9 +18,9 @@ public class DataGatherer : IDataGatherer
         _exceptionRepository = exceptionRepository;
     }
     
-    public async Task<ScheduleData> GatherDataAsync(DateTime scheduleKey)
+    public async Task<ScheduleData> GatherDataAsync(string deskId, DateTime scheduleStartDateTime)
     {
-        var schedule = await _scheduleRepository.ReadAsync(scheduleKey);
+        var schedule = await _scheduleRepository.ReadAsync((deskId, scheduleStartDateTime));
         if (schedule is null)
         {
             throw new KeyNotFoundException("Schedule not found in database.");
@@ -32,7 +32,7 @@ public class DataGatherer : IDataGatherer
             throw new ApplicationException("No active employees are present in the database.");
         }
 
-        var exceptions = await _exceptionRepository.GetScheduleExceptions(scheduleKey);
+        var exceptions = await _exceptionRepository.GetScheduleExceptions(deskId, scheduleStartDateTime);
 
         return new ScheduleData { Schedule = schedule, Employees = activeEmployees, Exceptions = exceptions };
     }

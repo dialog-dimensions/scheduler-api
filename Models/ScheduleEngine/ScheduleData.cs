@@ -10,12 +10,21 @@ public class ScheduleData
     public IEnumerable<ShiftException> Exceptions { get; set; }
 
     
-    public Shift? FindShift(DateTime shiftKey) => 
-        Schedule.FirstOrDefault(shift => shift.StartDateTime == shiftKey);
+    public Shift? FindShift(string deskId, DateTime shiftStartDateTime) => 
+        Schedule.FirstOrDefault(
+            shift => 
+            shift.Desk.Id == deskId &&
+            shift.StartDateTime == shiftStartDateTime
+            );
     
     public Employee? FindEmployee(int employeeId) => 
         Employees.FirstOrDefault(emp => emp.Id == employeeId);
 
-    public ShiftException? FindException(DateTime shiftKey, int employeeId) =>
-        Exceptions.FirstOrDefault(ex => ex.EmployeeId == employeeId & ex.ShiftKey == shiftKey);
+    public ShiftException? FindException(string deskId, DateTime shiftStartDateTime, int employeeId) =>
+        Exceptions.FirstOrDefault(
+            ex => 
+                ex.EmployeeId == employeeId && 
+                ex.DeskId == deskId && 
+                ex.ShiftStartDateTime == shiftStartDateTime
+                );
 }

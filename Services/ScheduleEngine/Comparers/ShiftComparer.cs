@@ -90,7 +90,8 @@ public class ShiftComparer : IShiftComparer
     private int CountExceptions(Shift shift, ExceptionType exceptionType)
     {
         return Data!.Exceptions.Count(ex => 
-            ex.ShiftKey.Equals(shift.StartDateTime) & 
+            ex.DeskId == shift.Desk.Id &&
+            ex.ShiftStartDateTime.Equals(shift.StartDateTime) && 
             ex.ExceptionType == exceptionType);
     }
 }

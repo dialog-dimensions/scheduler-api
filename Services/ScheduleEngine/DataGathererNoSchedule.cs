@@ -15,10 +15,10 @@ public class DataGathererNoSchedule : IDataGatherer
         _exceptionRepository = exceptionRepository;
     }
     
-    public async Task<ScheduleData> GatherDataAsync(DateTime scheduleKey)
+    public async Task<ScheduleData> GatherDataAsync(string deskId, DateTime scheduleStartDateTime)
     {
         var employees = await _employeeRepository.ReadAllActiveAsync();
-        var exceptions = await _exceptionRepository.GetScheduleExceptions(scheduleKey);
+        var exceptions = await _exceptionRepository.GetScheduleExceptions(deskId, scheduleStartDateTime);
         return new ScheduleData 
         { 
             Employees = employees, 

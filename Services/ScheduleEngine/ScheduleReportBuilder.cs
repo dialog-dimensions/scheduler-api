@@ -54,6 +54,6 @@ public class ScheduleReportBuilder : IScheduleReportBuilder
     private static IEnumerable<ShiftExceptionDto> GetViolations(ScheduleData data) => 
         data.Exceptions
             .Where(ex => data.Schedule
-                .First(shift => shift.StartDateTime == ex.ShiftKey).EmployeeId == ex.EmployeeId)
+                .First(shift => shift.StartDateTime == ex.ShiftStartDateTime && shift.Desk.Id == ex.DeskId).EmployeeId == ex.EmployeeId)
             .Select(ShiftExceptionDto.FromEntity);
 }

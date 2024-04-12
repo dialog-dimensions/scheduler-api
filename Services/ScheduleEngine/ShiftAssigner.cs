@@ -38,10 +38,10 @@ public class ShiftAssigner : IShiftAssigner
         Data = data;
     }
 
-    private Employee? PickAssignment(DateTime shiftKey)
+    private Employee? PickAssignment(DateTime shiftStart)
     {
         if (!Ready) return default;
-        _employeeComparer.SetShift(shiftKey);
+        _employeeComparer.SetShift(Data.Schedule.DeskId, shiftStart);
         return Data!.Employees.MinBy(emp => emp, _employeeComparer);
     }
     
@@ -57,16 +57,16 @@ public class ShiftAssigner : IShiftAssigner
         Assign(shiftKey, employee);
     }
 
-    private void Assign(DateTime shiftKey, Employee employee)
+    private void Assign(DateTime shiftStart, Employee employee)
     {
-        var shift = Data!.FindShift(shiftKey)!;
+        var shift = Data!.FindShift(Data.Schedule.DeskId, shiftStart)!;
         shift.Employee = employee;
         _balancer.OnShiftAssigned(shift, employee);
     }
     
-    public Employee? UnAssign(DateTime shiftKey)
+    public Employee? UnAssign(DateTime shiftStart)
     {
-        var shift = Data!.FindShift(shiftKey)!;
+        var shift = Data!.FindShift(Data.Schedule.DeskId, shiftStart)!;
         var employee = shift.Employee;
         if (employee is null)
         {
