@@ -83,12 +83,12 @@ public class TwilioController : Controller
         }
     }
     
-    [HttpPost("PublishShifts")]
+    [HttpPost("PublishShifts/{deskId}")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> PublishShifts()
+    public async Task<IActionResult> PublishShifts(string deskId)
     {
         var activeEmployees = await _employeeRepository.ReadAllActiveAsync();
-        var nearestSchedule = await _scheduleRepository.ReadNextAsync();
+        var nearestSchedule = await _scheduleRepository.ReadNextAsync(deskId);
         if (nearestSchedule is null)
         {
             return NotFound();
