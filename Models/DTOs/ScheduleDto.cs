@@ -6,39 +6,35 @@ namespace SchedulerApi.Models.DTOs;
 
 public class ScheduleDto : List<ShiftDto>, IDto<Schedule, ScheduleDto>
 {
-    public DeskDto Desk { get; set; }
-    public DateTime? StartDateTime => this.MinBy(s => s.StartDateTime)?.StartDateTime;
-    public DateTime? EndDateTime => this.MaxBy(s => s.EndDateTime)?.EndDateTime;
-
-    public int? ShiftDuration => StartDateTime.HasValue & EndDateTime.HasValue
-        ? (int)double.Round(EndDateTime!.Value.Subtract(StartDateTime!.Value).TotalHours / Count)
-        : null;
-
+    public DeskDto Desk => SomeShift.Desk;
+    public DateTime StartDateTime => FirstShift.StartDateTime;
+    public DateTime EndDateTime => LastShift.EndDateTime;
+    public int ShiftDuration => (int)(Duration.TotalHours / Count);
     public bool IsFullyScheduled => this.All(shift => shift.Employee is not null);
+    
+    private ShiftDto FirstShift => this.MinBy(s => s.StartDateTime)!;
+    private ShiftDto LastShift => this.MaxBy(s => s.StartDateTime)!;
+    private ShiftDto SomeShift => this[0];
+    private TimeSpan Duration => EndDateTime.Subtract(StartDateTime);
+    
     
     public static ScheduleDto FromEntity(Schedule entity)
     {
-        var result = new ScheduleDto { Desk = DeskDto.FromEntity(entity.Desk) };
+        var result = new ScheduleDto();
         result.AddRange(entity.Select(ShiftDto.FromEntity));
         return result;
     }
     
     public Schedule ToEntity()
     {
-        var result = new Schedule
-        {
-            Desk = Desk.ToEntity(),
-            StartDateTime = StartDateTime!.Value, 
-            EndDateTime = EndDateTime!.Value, 
-            ShiftDuration = ShiftDuration!.Value
-        };
+        var result = new Schedule();
         
         result.AddRange(this.Select(shiftDto => new Shift
         {
             Desk = shiftDto.Desk.ToEntity(),
             StartDateTime = shiftDto.StartDateTime,
             EndDateTime = shiftDto.EndDateTime,
-            ScheduleStartDateTime = StartDateTime!.Value,
+            ScheduleStartDateTime = StartDateTime,
             Employee = shiftDto.Employee?.ToEntity()
         }));
 
