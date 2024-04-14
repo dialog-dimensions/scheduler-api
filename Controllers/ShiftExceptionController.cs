@@ -285,10 +285,11 @@ public class
             {
                 var fileWindowEnd = runningProcess.FileWindowEnd;
                 var publishDateTime = runningProcess.PublishDateTime;
+                var desk = runningProcess.Desk;
                 var user = await _userManager.FindByIdAsync(userId.ToString());
                 if (user is not null)
                 {
-                    await _twilio.TriggerAckFileFlow(user.PhoneNumber!, fileWindowEnd, publishDateTime);
+                    await _twilio.TriggerAckFileFlow(user.PhoneNumber!, desk, fileWindowEnd, publishDateTime);
                 }
             }
                 

@@ -15,13 +15,15 @@ public class TwilioController : Controller
     private readonly IEmployeeRepository _employeeRepository;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IScheduleRepository _scheduleRepository;
+    private readonly IDeskRepository _deskRepository;
 
-    public TwilioController(ITwilioServices twilioServices, IEmployeeRepository employeeRepository, UserManager<IdentityUser> userManager, IScheduleRepository scheduleRepository)
+    public TwilioController(ITwilioServices twilioServices, IEmployeeRepository employeeRepository, UserManager<IdentityUser> userManager, IScheduleRepository scheduleRepository, IDeskRepository deskRepository)
     {
         _twilioServices = twilioServices;
         _employeeRepository = employeeRepository;
         _userManager = userManager;
         _scheduleRepository = scheduleRepository;
+        _deskRepository = deskRepository;
     }
     
     // [HttpPost("{phoneNumber}")]
@@ -87,11 +89,17 @@ public class TwilioController : Controller
     [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> PublishShifts(string deskId)
     {
-        var activeEmployees = await _employeeRepository.ReadAllActiveAsync();
+        var desk = await _deskRepository.ReadAsync(deskId);
+        if (desk is null)
+        {
+            return NotFound("desk not found in database.");
+        }
+        
+        var activeEmployees = await _employeeRepository.ReadAllActiveAsync(deskId);
         var nearestSchedule = await _scheduleRepository.ReadNextAsync(deskId);
         if (nearestSchedule is null)
         {
-            return NotFound();
+            return NotFound("no upcoming schedule for requested desk.");
         }
         
         try
@@ -104,7 +112,7 @@ public class TwilioController : Controller
                     continue;
                 }
 
-                await _twilioServices.TriggerPublishShiftsFlow(user.PhoneNumber!, employee.Name,
+                await _twilioServices.TriggerPublishShiftsFlow(user.PhoneNumber!, desk, employee.Name,
                     nearestSchedule.StartDateTime, nearestSchedule.EndDateTime);
             }
             return Ok();

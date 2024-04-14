@@ -1,10 +1,12 @@
-﻿namespace SchedulerApi.Services.WhatsAppClient.Twilio;
+﻿using SchedulerApi.Models.Organization;
+
+namespace SchedulerApi.Services.WhatsAppClient.Twilio;
 
 public interface ITwilioServices
 {
-    Task TriggerCallToFileFlow(string phoneNumber, string userName, DateTime scheduleStartDateTime, DateTime fileWindowEndDateTime);
-    Task TriggerAckFileFlow(string phoneNumber, DateTime fileEndDateTime, DateTime publishDateTime);
-    Task TriggerNotifyManagerFlow(string phoneNumber, string managerName, DateTime scheduleStartDateTime, DateTime approveWindowEndDateTime);
-    Task TriggerPublishShiftsFlow(string phoneNumber, string employeeName, DateTime from, DateTime to);
+    Task TriggerCallToFileFlow(string phoneNumber, Desk desk, string userName, DateTime scheduleStartDateTime, DateTime fileWindowEndDateTime);
+    Task TriggerAckFileFlow(string phoneNumber, Desk desk, DateTime fileEndDateTime, DateTime publishDateTime);
+    Task TriggerNotifyManagerFlow(string phoneNumber, Desk desk, string managerName, DateTime scheduleStartDateTime, DateTime approveWindowEndDateTime);
+    Task TriggerPublishShiftsFlow(string phoneNumber, Desk desk, string employeeName, DateTime from, DateTime to);
     Task TriggerCallToRegisterFlow(string userName, string userId, string phoneNumber);
 }

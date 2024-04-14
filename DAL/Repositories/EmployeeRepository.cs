@@ -66,6 +66,16 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
         return result;
     }
 
+    public async Task<IEnumerable<Employee>> ReadAllActiveAsync(string deskId)
+    {
+        return await Context.DeskAssignments
+            .Where(da => da.DeskId == deskId)
+            .Include(da => da.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .Select(da => da.Employee)
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<Employee>> ReadAllAssignedAsync()
     {
         // TODO: implement in O(1).

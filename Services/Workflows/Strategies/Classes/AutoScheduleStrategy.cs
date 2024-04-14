@@ -116,7 +116,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
             var userName = employee.Name;
             var phoneNumber = user.PhoneNumber!;
             
-            await _twilio.TriggerCallToFileFlow(phoneNumber, userName, ScheduleStart, FileWindowEnd);
+            await _twilio.TriggerCallToFileFlow(phoneNumber, Desk, userName, ScheduleStart, FileWindowEnd);
             await Task.Delay(_messageBufferTime);
         }
     }
@@ -174,7 +174,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         }
 
         Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Notifying Manager {manager.Name} on {user.PhoneNumber} Schedule is Ready for Review.");
-        await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, manager.Name, ScheduleStart, ProcessEnd);
+        await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, Desk, manager.Name, ScheduleStart, ProcessEnd);
     }
 
     private async Task NotifyManagerScheduleReadyAsync(object[] parameters)
@@ -227,7 +227,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         foreach (var employee in data.Employees)
         {
             var user = await _userManager.FindByIdAsync(employee.Id.ToString());
-            await _twilio.TriggerPublishShiftsFlow(user!.PhoneNumber!, employee.Name, data.Schedule.StartDateTime, 
+            await _twilio.TriggerPublishShiftsFlow(user!.PhoneNumber!, Desk, employee.Name, data.Schedule.StartDateTime, 
                 data.Schedule.EndDateTime);
             
             await Task.Delay(_messageBufferTime);

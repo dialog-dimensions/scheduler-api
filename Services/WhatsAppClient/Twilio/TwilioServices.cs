@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Azure.Security.KeyVault.Secrets;
+using SchedulerApi.Models.Organization;
 using Twilio;
 using Twilio.Rest.Studio.V1.Flow;
 using Twilio.Types;
@@ -51,18 +52,17 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
     
-    public async Task TriggerCallToFileFlow(string phoneNumber, string userName, DateTime scheduleStartDateTime,
+    public async Task TriggerCallToFileFlow(string phoneNumber, Desk desk, string userName, DateTime scheduleStartDateTime,
         DateTime fileWindowEndDateTime)
     {
-        var windowDuration = TimeSpan.FromHours(_processParams.GetValue<double>("FileWindowDurHrs"));
-        var windowEnd = DateTime.Now.Add(windowDuration);
-        
         var parameters = new Dictionary<string, object>
         {
             { "name", userName },
             { "scheduleStart", scheduleStartDateTime.ToString(DateFormat, _he) },
-            { "fileEndDate", windowEnd.ToString(DateFormat, _he) },
-            { "fileEndTime", windowEnd.ToString("HH:mm") }
+            { "fileEndDate", fileWindowEndDateTime.ToString(DateFormat, _he) },
+            { "fileEndTime", fileWindowEndDateTime.ToString("HH:mm") },
+            { "deskId", desk.Id },
+            { "deskName", desk.Name }
         };
         
         var execution = await ExecutionResource.CreateAsync(
@@ -75,13 +75,14 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public async Task TriggerAckFileFlow(string phoneNumber, DateTime fileEndDateTime, DateTime publishDateTime)
+    public async Task TriggerAckFileFlow(string phoneNumber, Desk desk, DateTime fileEndDateTime, DateTime publishDateTime)
     {
         var parameters = new Dictionary<string, object>
         {
             { "publishDate", publishDateTime.ToString(DateFormat, _he) },
             { "fileWindowEndDate", fileEndDateTime.ToString(DateFormat, _he) },
-            { "fileWindowEndTime", fileEndDateTime.ToString("HH:mm") }
+            { "fileWindowEndTime", fileEndDateTime.ToString("HH:mm") },
+            { "deskName", desk.Name }
         };
         
         var execution = await ExecutionResource.CreateAsync(
@@ -94,18 +95,22 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public async Task TriggerNotifyManagerFlow(string phoneNumber, string managerName, DateTime scheduleStartDateTime,
+    public async Task TriggerNotifyManagerFlow(string phoneNumber, Desk desk, string managerName, DateTime scheduleStartDateTime,
         DateTime approveWindowEndDateTime)
     {
         var headsUp = TimeSpan.FromHours(_processParams.GetValue<double>("HeadsUpDurHrs"));
         var autoPublishDateTime = scheduleStartDateTime.Subtract(headsUp);
+
+        var scheduleRoute = $"{desk.Id}/next";
         
         var parameters = new Dictionary<string, object>
         {
             { "name", managerName },
             { "scheduleStart", scheduleStartDateTime.ToString(DateFormat, _he) },
             { "publishDate", autoPublishDateTime.ToString(DateFormat, _he) },
-            { "publishTime", autoPublishDateTime.ToString("HH:mm") }
+            { "publishTime", autoPublishDateTime.ToString("HH:mm") },
+            { "scheduleRoute", scheduleRoute },
+            { "deskName", desk.Name }
         };
         
         var execution = await ExecutionResource.CreateAsync(
@@ -118,13 +123,17 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public async Task TriggerPublishShiftsFlow(string phoneNumber, string employeeName, DateTime from, DateTime to)
+    public async Task TriggerPublishShiftsFlow(string phoneNumber, Desk desk, string employeeName, DateTime from, DateTime to)
     {
+        var scheduleRoute = $"{desk.Id}/next";
+        
         var parameters = new Dictionary<string, object>
         {
             { "name", employeeName },
             { "scheduleStart", from.ToString("dd.MM") },
-            { "scheduleEnd", to.ToString("dd.MM")}
+            { "scheduleEnd", to.ToString("dd.MM") },
+            { "scheduleRoute", scheduleRoute },
+            { "deskName", desk.Name }
         };
 
         var execution = await ExecutionResource.CreateAsync(
