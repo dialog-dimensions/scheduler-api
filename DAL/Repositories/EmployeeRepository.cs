@@ -122,6 +122,12 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
         await Context.SaveChangesAsync();
     }
 
+    public async Task<IEnumerable<Employee>> GetUnitManagers(string unitId) => 
+        await Context.Employees
+            .Where(e => e.Role == "Manager")
+            .Where(e => e.UnitId == unitId)
+            .ToListAsync();
+
     public override async Task UpdateAsync(Employee employee)
     {
         Context.Entry(employee).State = EntityState.Modified;
