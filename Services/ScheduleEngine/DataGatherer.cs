@@ -26,7 +26,7 @@ public class DataGatherer : IDataGatherer
             throw new KeyNotFoundException("Schedule not found in database.");
         }
 
-        var activeEmployees = (await _employeeRepository.ReadAllActiveAsync()).ToList();
+        var activeEmployees = (await _employeeRepository.ReadAllActiveAsync(deskId)).ToList();
         if (activeEmployees.Count == 0)
         {
             throw new ApplicationException("No active employees are present in the database.");

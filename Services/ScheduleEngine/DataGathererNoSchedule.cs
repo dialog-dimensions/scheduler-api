@@ -17,7 +17,7 @@ public class DataGathererNoSchedule : IDataGatherer
     
     public async Task<ScheduleData> GatherDataAsync(string deskId, DateTime scheduleStartDateTime)
     {
-        var employees = await _employeeRepository.ReadAllActiveAsync();
+        var employees = await _employeeRepository.ReadAllActiveAsync(deskId);
         var exceptions = await _exceptionRepository.GetScheduleExceptions(deskId, scheduleStartDateTime);
         return new ScheduleData 
         { 
