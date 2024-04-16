@@ -63,9 +63,15 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         Construct();
     }
 
+    private void BeforeCreatingShifts(Desk desk, DateTime start)
+    {
+        Desk = desk;
+        CaptureProcessTimeline(start);
+    }
+    
     private async Task CreateShifts(Desk desk, DateTime start, DateTime end, int shiftDuration)
     {
-        CaptureProcessTimeline(start);
+        BeforeCreatingShifts(desk, start);
         await _scheduleRepository.CreateAsync(
             _scheduleFactory.FromParameters(desk, start, end, shiftDuration)
             );
@@ -103,7 +109,7 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task NotifyGather()
     {
-        var activeEmployees = await _employeeRepository.ReadAllActiveAsync();
+        var activeEmployees = await _employeeRepository.ReadAllActiveAsync(_desk.Id);
         foreach (var employee in activeEmployees)
         {
             var id = employee.Id.ToString();
@@ -161,20 +167,40 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
 
     private async Task NotifyManagerScheduleReady()
     {
-        var manager = (await _employeeRepository.ReadAllAsync()).FirstOrDefault(emp => emp.Role == "Manager");
-        if (manager is null)
+        var managers = (await _employeeRepository.GetUnitManagers(Desk.UnitId)).ToList();
+        if (managers.Count == 0)
         {
             return;
         }
 
-        var user = await _userManager.FindByIdAsync(manager.Id.ToString());
-        if (user is null)
+        var users = new List<IdentityUser>();
+        foreach (var manager in managers)
+        {
+            var user = await _userManager.FindByIdAsync(manager.Id.ToString());
+            if (user is null)
+            {
+                continue;
+            }
+
+            users.Add(user);
+        }
+
+        if (users.Count == 0)
         {
             return;
         }
 
-        Console.WriteLine($"{DateTime.Now:MM-dd HH:mm:ss} Notifying Manager {manager.Name} on {user.PhoneNumber} Schedule is Ready for Review.");
-        await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, Desk, manager.Name, ScheduleStart, ProcessEnd);
+        foreach (var user in users)
+        {
+            var manager = managers.Find(manager => manager.Id.ToString() == user.Id);
+            if (manager is null)
+            {
+                throw new KeyNotFoundException("problem linking a manager instance to the manager user instance");
+            }
+            
+            await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, Desk, manager.Name, ScheduleStart, ProcessEnd);
+            await Await(_messageBufferTime);
+        }
     }
 
     private async Task NotifyManagerScheduleReadyAsync(object[] parameters)
