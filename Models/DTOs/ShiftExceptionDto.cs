@@ -2,6 +2,7 @@
 using SchedulerApi.Models.DTOs.OrganizationEntities;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Enums;
+using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.DTOs;
 
@@ -27,6 +28,16 @@ public class ShiftExceptionDto : IDto<ShiftException, ShiftExceptionDto>
         ShiftStartDateTime = ShiftStartDateTime,
         EmployeeId = EmployeeId,
         ExceptionType = ExceptionType,
-        Reason = Reason
+        Reason = Reason,
+        Desk = Desk.ToEntity()
+    };
+
+    public ShiftException ToEntityWithExistingDesk(Desk desk) => new()
+    {
+        ShiftStartDateTime = ShiftStartDateTime,
+        EmployeeId = EmployeeId,
+        ExceptionType = ExceptionType,
+        Reason = Reason,
+        Desk = desk
     };
 }

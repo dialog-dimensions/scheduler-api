@@ -257,7 +257,9 @@ public class
         
         foreach (var exception in exceptions)
         {
-            var shift = await _context.Shifts.FindAsync(exception.Desk.Id, exception.ShiftStartDateTime);
+            var shift = await _context.Shifts
+                .Include(s => s.Desk)
+                .FirstOrDefaultAsync(shift => shift.DeskId == exception.Desk.Id && shift.StartDateTime == exception.ShiftStartDateTime);
             if (shift is null)
             {
                 return NotFound(new { Message = "Shift not found in database." });
@@ -268,8 +270,8 @@ public class
             {
                 return BadRequest("Exception already exists for employee for shift.");
             }
-
-            _context.Exceptions.Add(exception.ToEntity());
+            
+            _context.Exceptions.Add(exception.ToEntityWithExistingDesk(shift.Desk));
         }
 
         if (await _context.SaveChangesAsync() != exceptions.Count)
