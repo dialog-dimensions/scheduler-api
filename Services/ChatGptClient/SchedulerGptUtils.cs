@@ -23,6 +23,10 @@ public static class SchedulerGptUtils
         $"        \"StartDateTime\": \"{schedule.StartDateTime}\"," +
         $"        \"EndDateTime\": \"{schedule.EndDateTime}\"," +
         $"        \"ShiftDurationHrs\": \"{schedule.ShiftDuration}\"" +
+        $"    }}" +
+        $"    \"DeskDetails\": {{" +
+        $"        \"DeskId\": \"{schedule.DeskId}\"," +
+        $"        \"DeskName\": \"{schedule.Desk.Name}\"" +
         $"    }}," +
         $"    \"EmployeeDetails\": {{" +
         $"        \"Name\": \"{employee.Name}\"," +
