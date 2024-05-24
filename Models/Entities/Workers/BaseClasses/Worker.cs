@@ -1,4 +1,5 @@
-﻿using SchedulerApi.Models.Entities.Workers.Interfaces;
+﻿using SchedulerApi.Enums;
+using SchedulerApi.Models.Entities.Workers.Interfaces;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities.Workers.BaseClasses;
@@ -8,8 +9,10 @@ public abstract class Worker : IWorker
     public object Key => Id;
     public int Id { get; set; }
     public string Name { get; set; }
+    public Gender Gender { get; set; } = Gender.Unknown;
     public string Role { get; set; }
 
+    
     private Unit _unit;
     public Unit Unit
     {
