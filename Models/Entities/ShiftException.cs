@@ -18,7 +18,7 @@ public class ShiftException : IKeyProvider
             DeskId = value.Id;
         }
     }
-    public string DeskId { get; private set; }
+    public string DeskId { get; set; }
     
     public DateTime ShiftStartDateTime { get; set; }
     public Shift Shift { get; set; }
