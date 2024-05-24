@@ -78,10 +78,6 @@ public class SchedulerGptServices : ISchedulerGptServices
         var initialInstructionsMessage = SchedulerGptUtils.InitialStringBuilder(schedule, employee, otherInstructions);
         await ProcessIncomingMessage(threadId, initialInstructionsMessage, true);
         
-        
-        // Trigger Call to File Flow Using Twilio Flows
-        await _twilioServices.TriggerCallToFileGptFlow(user.PhoneNumber!, employee.Name, schedule, DateTime.MaxValue);
-        
         // Return the New Thread ID
         return threadId;
     }
@@ -137,8 +133,13 @@ public class SchedulerGptServices : ISchedulerGptServices
 
         if (initialContact)
         {
-            await _twilioServices.TriggerCallToFileGptFlow(phoneNumber, session.Employee!.Name, session.Schedule!,
-                DateTime.MaxValue);
+            await _twilioServices.TriggerCallToFileGptFlow(
+                phoneNumber, 
+                session.Employee!.Name, 
+                session.Employee!.Gender, 
+                session.Schedule!,
+                DateTime.MaxValue
+                );
         }
         else
         {
