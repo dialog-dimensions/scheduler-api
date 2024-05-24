@@ -11,10 +11,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using OpenAI.Extensions;
+using SchedulerApi;
 using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
+using SchedulerApi.Services.ChatGptClient;
+using SchedulerApi.Services.ChatGptClient.Interfaces;
 using SchedulerApi.Services.JWT;
 using SchedulerApi.Services.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Comparers;
@@ -95,6 +99,7 @@ var keyVaultParams = builder.Configuration.GetSection("KeyVault");
 var keyVaultSecretNames = keyVaultParams.GetSection("SecretNames");
 var keyVaultJwtSecretNames = keyVaultSecretNames.GetSection("Jwt");
 var keyVaultTwilioSecretNames = keyVaultSecretNames.GetSection("Twilio");
+var keyVaultChatGptSecretNames = keyVaultSecretNames.GetSection("ChatGPT");
 
 var keyVaultUrl = keyVaultParams["Url"]!;
 
@@ -136,21 +141,27 @@ twilioClient.DefaultRequestHeaders.Authorization =
     new AuthenticationHeaderValue("Bearer", twilioAccountAuthToken);
 builder.Services.AddSingleton(twilioClient);
 
+var chatGptKvApiKey = secretClient.GetSecret(keyVaultChatGptSecretNames["ApiKey"]);
+builder.Services.AddOpenAIService(settings =>
+{
+    settings.ApiKey = chatGptKvApiKey.Value.Value;
+    settings.UseBeta = true;
+});
+builder.Services.AddSingleton<IAssistantServices, AssistantServices>();
+builder.Services.AddScoped<ISchedulerGptServices, SchedulerGptServices>();
+
 builder.Services.AddScoped<ITwilioServices, TwilioServices>();
 
 builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
 
 builder.Services.AddTransient<IScheduleFactory, ScheduleFactory>();
-
 builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IShiftExceptionRepository, ShiftExceptionRepository>();
 builder.Services.AddScoped<IDeskRepository, DeskRepository>();
 builder.Services.AddScoped<IUnitRepository, UnitRepository>();
-
-
-
+builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
 builder.Services.AddTransient<IQuotaCalculator, QuotaCalculator>();
 builder.Services.AddTransient<IAssignmentScorer, AssignmentScorer>();
@@ -252,13 +263,16 @@ app.MapControllers();
 
 app.Run();
 
-public class ErrorDetails
+namespace SchedulerApi
 {
-    public int StatusCode { get; set; }
-    public string Message { get; set; }
-
-    public override string ToString()
+    public class ErrorDetails
     {
-        return JsonConvert.SerializeObject(this);
+        public int StatusCode { get; set; }
+        public string Message { get; set; }
+
+        public override string ToString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
     }
 }
