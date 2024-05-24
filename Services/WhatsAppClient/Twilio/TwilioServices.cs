@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Azure.Security.KeyVault.Secrets;
+using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Organization;
 using Twilio;
@@ -58,7 +59,7 @@ public class TwilioServices : ITwilioServices
         Console.WriteLine(execution.Sid);
     }
 
-    public async Task TriggerCallToFileGptFlow(string phoneNumber, string userName, Schedule schedule, DateTime fileWindowEndDateTime)
+    public async Task TriggerCallToFileGptFlow(string phoneNumber, string userName, Gender gender, Schedule schedule, DateTime fileWindowEndDateTime)
     {
         var generalNote =
             "חשוב לשים לב שחלון ההגשה נסגר ב " +
@@ -70,11 +71,9 @@ public class TwilioServices : ITwilioServices
         {
             { "name", userName },
             { "scheduleStartDate", schedule.StartDateTime.ToString(DateFormat, _he) },
-            { "scheduleStartTime", schedule.StartDateTime.ToString("HH:mm") },
             { "scheduleEndDate", schedule.EndDateTime.ToString(DateFormat, _he) },
-            { "scheduleEndTime", schedule.EndDateTime.ToString("HH:mm") },
-            { "shiftDurationHrs", schedule.ShiftDuration },
-            { "generalNote", generalNote }
+            { "generalNote", generalNote },
+            { "gender", gender.ToString()}
         };
 
         var execution = await ExecutionResource.CreateAsync(
