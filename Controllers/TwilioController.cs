@@ -1,9 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
+using SchedulerApi.Services.ChatGptClient.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
+using Twilio.AspNet.Common;
+using Twilio.AspNet.Mvc;
+using Twilio.TwiML.Messaging;
 
 namespace SchedulerApi.Controllers;
 
@@ -16,14 +21,25 @@ public class TwilioController : Controller
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IDeskRepository _deskRepository;
+    private readonly ISchedulerGptSessionRepository _gptSessionRepository;
+    private readonly ISchedulerGptServices _gptServices;
 
-    public TwilioController(ITwilioServices twilioServices, IEmployeeRepository employeeRepository, UserManager<IdentityUser> userManager, IScheduleRepository scheduleRepository, IDeskRepository deskRepository)
+    public TwilioController(
+        ITwilioServices twilioServices, 
+        IEmployeeRepository employeeRepository, 
+        UserManager<IdentityUser> userManager, 
+        IScheduleRepository scheduleRepository, 
+        IDeskRepository deskRepository,
+        ISchedulerGptSessionRepository gptSessionRepository,
+        ISchedulerGptServices gptServices)
     {
         _twilioServices = twilioServices;
         _employeeRepository = employeeRepository;
         _userManager = userManager;
         _scheduleRepository = scheduleRepository;
         _deskRepository = deskRepository;
+        _gptSessionRepository = gptSessionRepository;
+        _gptServices = gptServices;
     }
     
     // [HttpPost("{phoneNumber}")]
@@ -121,5 +137,32 @@ public class TwilioController : Controller
         {
             return Problem(ex.Message);
         }
+    }
+
+    [HttpPost("webhook")]
+    public async Task<IActionResult> Webhook([FromForm] SmsRequest twilioMessage)
+    {
+        var from = "0" + twilioMessage.From.Substring(twilioMessage.From.Length - 9, 9);
+        
+        var user = await _userManager.Users.Where(u => u.PhoneNumber == from).FirstOrDefaultAsync();
+        if (user is null)
+        {
+            return NotFound("user not found");
+        }
+
+        var employee = await _employeeRepository.ReadAsync(int.Parse(user.Id));
+        if (employee is null)
+        {
+            return NotFound("employee not found");
+        }
+
+        var session = await _gptSessionRepository.FindActiveByEmployeeIdAsync(employee.Id);
+        if (session is null)
+        {
+            return NotFound("no session for employee.");
+        }
+
+        await _gptServices.ProcessIncomingMessage(session.ThreadId, twilioMessage.Body);
+        return Ok();
     }
 }

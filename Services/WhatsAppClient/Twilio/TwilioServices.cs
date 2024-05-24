@@ -1,7 +1,9 @@
 ﻿using System.Globalization;
 using Azure.Security.KeyVault.Secrets;
+using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Organization;
 using Twilio;
+using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Studio.V1.Flow;
 using Twilio.Types;
 
@@ -16,6 +18,10 @@ public class TwilioServices : ITwilioServices
     private const string DateFormat = "dddd, dd.MM";
     private readonly CultureInfo _he = new("he-IL");
     private static string PhoneNumberFormat(string purePhoneNumber) => $"+972{purePhoneNumber[1..]}";
+
+    private static string WhatsAppPhoneNumberFormat(string purePhoneNumber) =>
+        $"whatsapp:{PhoneNumberFormat(purePhoneNumber)}";
+    
     private string SenderPhoneNumber => _twilioConfig["Account:ServiceSid"]!;
     
     public TwilioServices(IConfiguration configuration, SecretClient secretClient)
@@ -51,7 +57,45 @@ public class TwilioServices : ITwilioServices
         
         Console.WriteLine(execution.Sid);
     }
-    
+
+    public async Task TriggerCallToFileGptFlow(string phoneNumber, string userName, Schedule schedule, DateTime fileWindowEndDateTime)
+    {
+        var generalNote =
+            "חשוב לשים לב שחלון ההגשה נסגר ב " +
+            $"{fileWindowEndDateTime.ToString(DateFormat, _he)}" +
+            " בשעה " +
+            $"{fileWindowEndDateTime.ToString("HH:mm")}";
+        
+        var parameters = new Dictionary<string, object>
+        {
+            { "name", userName },
+            { "scheduleStartDate", schedule.StartDateTime.ToString(DateFormat, _he) },
+            { "scheduleStartTime", schedule.StartDateTime.ToString("HH:mm") },
+            { "scheduleEndDate", schedule.EndDateTime.ToString(DateFormat, _he) },
+            { "scheduleEndTime", schedule.EndDateTime.ToString("HH:mm") },
+            { "shiftDurationHrs", schedule.ShiftDuration },
+            { "generalNote", generalNote }
+        };
+
+        var execution = await ExecutionResource.CreateAsync(
+            parameters: parameters,
+            to: new PhoneNumber(WhatsAppPhoneNumberFormat(phoneNumber)),
+            from: new PhoneNumber(SenderPhoneNumber),
+            pathFlowSid: _flows["CallToFileGpt"]!
+        );
+
+        Console.WriteLine(execution.Sid);
+    }
+
+    public async Task SendFreeFormMessage(string content, string phoneNumber)
+    {
+        await MessageResource.CreateAsync(
+            body: content,
+            from: new PhoneNumber(SenderPhoneNumber),
+            to: new PhoneNumber(WhatsAppPhoneNumberFormat(phoneNumber))
+        );
+    }
+
     public async Task TriggerCallToFileFlow(string phoneNumber, Desk desk, string userName, DateTime scheduleStartDateTime,
         DateTime fileWindowEndDateTime)
     {
