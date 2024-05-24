@@ -109,4 +109,12 @@ public class DeskController : Controller
 
         return Ok();
     }
+
+    [HttpGet("employee-desks/{employeeId:int}")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<DeskDto>>> GetEmployeeDesksAsync(int employeeId)
+    {
+        var desks = await _repository.GetEmployeeDesks(employeeId);
+        return desks.Select(DeskDto.FromEntity).ToList();
+    }
 }

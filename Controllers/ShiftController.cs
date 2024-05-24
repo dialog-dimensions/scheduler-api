@@ -70,4 +70,34 @@ public class ShiftController : Controller
         
         return StatusCode(200);
     }
+
+    [HttpGet("{employeeId:int}/{from:datetime}/{to:datetime}")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<ShiftDto>>> GetEmployeeShiftsByRange(int employeeId, DateTime from, 
+        DateTime to) => 
+        (await _repository.GetEmployeeShiftsByRange(employeeId, from, to))
+        .Select(ShiftDto.FromEntity)
+        .ToList();
+
+
+    [HttpGet("employeeId:int")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<ShiftDto>>> GetEmployeeShifts(int employeeId) =>
+        (await _repository.GetEmployeeShifts(employeeId))
+        .Select(ShiftDto.FromEntity)
+        .ToList();
+    
+    [HttpGet("desk-shifts/{deskId}/{from:datetime}/{to:datetime}")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<ShiftDto>>> GetDeskShiftsByRange(string deskId, DateTime from,
+        DateTime to) => (await _repository.GetDeskShiftsByRange(deskId, from, to))
+        .Select(ShiftDto.FromEntity)
+        .ToList();
+
+    [HttpGet("desk-shifts/{deskId}")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<ShiftDto>>> GetDeskShifts(string deskId) =>
+        (await _repository.GetDeskShifts(deskId))
+        .Select(ShiftDto.FromEntity)
+        .ToList();
 }

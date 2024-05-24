@@ -71,4 +71,44 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
         // The Context.Shifts.Update(shift); line is removed, as it's unnecessary.
         await Context.SaveChangesAsync();
     }
+
+    public async Task<IEnumerable<Shift>> GetEmployeeShiftsByRange(int employeeId, DateTime from, DateTime to) => 
+        await Context.Shifts
+            .Where(s => s.EmployeeId == employeeId)
+            .Where(s => s.StartDateTime >= from)
+            .Where(s => s.StartDateTime <= to)
+            .Include(s => s.Desk)
+            .ThenInclude(d => d.Unit)
+            .Include(s => s.Employee)
+            .ThenInclude(emp => emp.Unit)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Shift>> GetDeskShiftsByRange(string deskId, DateTime from, DateTime to) =>
+        await Context.Shifts
+            .Where(s => s.DeskId == deskId)
+            .Where(s => s.StartDateTime >= from)
+            .Where(s => s.StartDateTime < to)
+            .Include(s => s.Desk)
+            .ThenInclude(d => d.Unit)
+            .Include(s => s.Employee)
+            .ThenInclude(e => e.Unit)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Shift>> GetEmployeeShifts(int employeeId) =>
+        await Context.Shifts
+            .Where(s => s.EmployeeId == employeeId)
+            .Include(s => s.Desk)
+            .ThenInclude(d => d.Unit)
+            .Include(s => s.Employee)
+            .ThenInclude(e => e.Unit)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Shift>> GetDeskShifts(string deskId) =>
+        await Context.Shifts
+            .Where(s => s.DeskId == deskId)
+            .Include(s => s.Desk)
+            .ThenInclude(d => d.Unit)
+            .Include(s => s.Employee)
+            .ThenInclude(e => e.Unit)
+            .ToListAsync();
 }
