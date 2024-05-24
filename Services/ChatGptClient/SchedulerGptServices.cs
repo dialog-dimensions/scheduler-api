@@ -166,11 +166,6 @@ public class SchedulerGptServices : ISchedulerGptServices
 
     private string OutgoingUserMessageWhenJsonDetected(string rawMessage)
     {
-        if (rawMessage.Contains(SchedulerGptUtils.EndGatherFlag))
-        {
-            return SchedulerGptUtils.GetSubstringPriorToFlag(rawMessage, SchedulerGptUtils.StartJsonFlag);
-        }
-
         return SchedulerGptUtils.GetSubstringPriorToFlag(
             rawMessage, 
             rawMessage.Contains(SchedulerGptUtils.EndGatherFlag) ? 
