@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using SchedulerApi.Enums;
+using SchedulerApi.Models.ChatGPT;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
@@ -23,10 +25,10 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Process> Processes { get; set; }
     public DbSet<AutoScheduleProcess> AutoScheduleProcesses { get; set; }
     public DbSet<Step> Steps { get; set; }
-
     public DbSet<Unit> Units { get; set; }
     public DbSet<Desk> Desks { get; set; }
     public DbSet<DeskAssignment> DeskAssignments { get; set; }
+    public DbSet<SchedulerGptSession> SchedulerGptSessions { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -44,7 +46,8 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
 
         modelBuilder.Entity<ShiftException>()
             .ToTable("ShiftExceptions")
-            .HasKey(ex => new { ex.DeskId, ex.ShiftStartDateTime, ex.EmployeeId });
+            .HasKey(ex => new { 
+                ex.DeskId, ex.ShiftStartDateTime, ex.EmployeeId });
 
         modelBuilder.Entity<ShiftSwap>()
             .ToTable("ShiftSwaps")
@@ -70,6 +73,10 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<DeskAssignment>()
             .ToTable("DeskAssignments")
             .HasKey(da => new { da.DeskId, da.EmployeeId });
+
+        modelBuilder.Entity<SchedulerGptSession>()
+            .ToTable("SchedulerGptSessions")
+            .HasKey(session => session.ThreadId);
         
         //Relationships
         modelBuilder.Entity<Shift>()
@@ -135,6 +142,11 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .WithOne(swap => swap.Desk)
             .HasForeignKey(swap => swap.DeskId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Employee>()
+            .HasMany<SchedulerGptSession>()
+            .WithOne(session => session.Employee)
+            .HasForeignKey(session => session.EmployeeId);
         
         //Custom Indexes
         modelBuilder.Entity<Employee>()
@@ -171,6 +183,10 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .Property(emp => emp.Role)
             .HasColumnType("nvarchar(50)");
         
+        modelBuilder.Entity<Employee>()
+            .Property(emp => emp.Gender)
+            .HasColumnType("nvarchar(50)");
+        
         modelBuilder.Entity<Shift>()
             .Property(shift => shift.ModificationUser)
             .HasColumnType("nvarchar(225)");
@@ -191,11 +207,22 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .Property(swap => swap.Status)
             .HasColumnType("nvarchar(50)");
 
+        modelBuilder.Entity<SchedulerGptSession>()
+            .Property(session => session.ConversationState)
+            .HasColumnType("nvarchar(50)");
+
         modelBuilder.Entity<Employee>(entity =>
         {
             entity.Property(e => e.Id)
                 .ValueGeneratedNever();
         });
+
+        modelBuilder.Entity<Employee>()
+            .Property(emp => emp.Gender)
+            .HasConversion(
+                g => g.ToString(), // Convert enum to string when saving to the database
+                g => (Gender)Enum.Parse(typeof(Gender), g) // Convert string back to enum when reading from the database
+            );
         
         modelBuilder.Entity<ShiftException>()
             .Property(ex => ex.ExceptionType)
@@ -260,6 +287,12 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
                 v => (TaskStatus)Enum.Parse(typeof(TaskStatus), v) // Convert string back to enum when reading from the database
             );
         
+        modelBuilder.Entity<SchedulerGptSession>()
+            .Property(session => session.ConversationState)
+            .HasConversion(
+                state => state.ToString(), // Convert enum to string when saving to the database
+                state => (ShabtzanGptConversationState)Enum.Parse(typeof(ShabtzanGptConversationState), state) // Convert string back to enum when reading from the database
+            );
         
         //Default expressions
         modelBuilder.Entity<Employee>(entity => entity
@@ -277,6 +310,10 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<Employee>(entity => entity
             .Property(e => e.Role)
             .HasDefaultValue("Employee"));
+        
+        modelBuilder.Entity<Employee>(entity => entity
+            .Property(e => e.Gender)
+            .HasDefaultValue(Gender.Unknown));
 
         modelBuilder.Entity<Shift>(entity => entity
             .Property(s => s.ModificationDateTime)
@@ -305,5 +342,9 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<ShiftSwap>(entity => entity
             .Property(s => s.ModificationUser)
             .HasDefaultValue(User.Computer));
+        
+        modelBuilder.Entity<SchedulerGptSession>(entity => entity
+            .Property(session => session.ConversationState)
+            .HasDefaultValue(ShabtzanGptConversationState.NotCreated));
     }
 }
