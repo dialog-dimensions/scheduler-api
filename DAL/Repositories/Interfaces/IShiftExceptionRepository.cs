@@ -8,4 +8,5 @@ public interface IShiftExceptionRepository : IRepository<ShiftException>
     Task<IEnumerable<ShiftException>> WhereAsync(int employeeId);
 
     Task<IEnumerable<ShiftException>> GetScheduleExceptions(string deskId, DateTime scheduleStartDateTime);
+    Task CreateRangeAsync(IEnumerable<ShiftException> exceptions);
 }

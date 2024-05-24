@@ -127,4 +127,10 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
             .ToListAsync();
         return result;
     }
+
+    public async Task CreateRangeAsync(IEnumerable<ShiftException> exceptions)
+    {
+        Context.Exceptions.AddRange(exceptions);
+        await Context.SaveChangesAsync();
+    }
 }
