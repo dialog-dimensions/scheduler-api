@@ -106,7 +106,9 @@ public class SchedulerGptServices : ISchedulerGptServices
         }
 
         // Analyze New Conversation State According to Outgoing Message
-        var newConversationState = SchedulerGptUtils.AnalyzeConversationState(session.LatestMessage.Content);
+        var newConversationState = initialContact ? 
+            ShabtzanGptConversationState.Gathering : 
+            SchedulerGptUtils.AnalyzeConversationState(session.LatestMessage.Content);
 
         // If Applicable, Process New State
         if (newConversationState is not null)

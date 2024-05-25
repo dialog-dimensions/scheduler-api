@@ -11,10 +11,10 @@ namespace SchedulerApi.Services.ChatGptClient;
 
 public static class SchedulerGptUtils
 {
-    public const string StartGatherFlag = "//*START GATHER*//";
-    public const string EndGatherFlag = "//*END GATHER*//";
-    public const string StartJsonFlag = "//*START JSON*//";
-    public const string EndJsonFlag = "//*END JSON*//";
+    public const string StartGatherFlag = "//START GATHER//";
+    public const string EndGatherFlag = "//END GATHER//";
+    public const string StartJsonFlag = "//START JSON//";
+    public const string EndJsonFlag = "//END JSON//";
     
     public static string InitialStringBuilder(
         Schedule schedule, Employee employee, Dictionary<string, string>? otherInstructions = null) =>
