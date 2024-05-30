@@ -141,6 +141,7 @@ twilioClient.DefaultRequestHeaders.Authorization =
     new AuthenticationHeaderValue("Bearer", twilioAccountAuthToken);
 builder.Services.AddSingleton(twilioClient);
 
+// ChatGPT
 var chatGptKvApiKey = secretClient.GetSecret(keyVaultChatGptSecretNames["ApiKey"]);
 builder.Services.AddOpenAIService(settings =>
 {
@@ -149,8 +150,7 @@ builder.Services.AddOpenAIService(settings =>
 });
 builder.Services.AddSingleton<IAssistantServices, AssistantServices>();
 builder.Services.AddScoped<ISchedulerGptServices, SchedulerGptServices>();
-
-builder.Services.AddScoped<ITwilioServices, TwilioServices>();
+builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
 builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
 
@@ -176,8 +176,11 @@ builder.Services.AddTransient<IScheduleReportBuilder, ScheduleReportBuilder>();
 builder.Services.AddTransient<IScheduler, Scheduler>();
 
 builder.Services.AddScoped<IAutoScheduleStrategy, AutoScheduleStrategy>();
+builder.Services.AddScoped<IGptStrategy, GptStrategy>();
 builder.Services.AddScoped<IAutoScheduleProcess, AutoScheduleProcess>();
-builder.Services.AddSingleton<IAutoScheduleScanner, AutoScheduleScanner>();
+builder.Services.AddScoped<IGptScheduleProcess, GptScheduleProcess>();
+builder.Services.AddScoped<IRepository<Step>, StepRepository>();
+builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRepository>();
 builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
 builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRepository>();
 builder.Services.AddScoped<IRepository<Step>, StepRepository>();

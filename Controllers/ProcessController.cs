@@ -21,10 +21,19 @@ public class ProcessController : Controller
 
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Run(DeskDto desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task<IActionResult> Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var process = _serviceProvider.GetRequiredService<IAutoScheduleProcess>();
-        await process.Run(desk.ToEntity(), startDateTime, endDateTime, shiftDuration);
+        await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
+        return Ok();
+    }
+    
+    [HttpPost("gpt")]
+    [Authorize(Roles = "Admin,Manager")]
+    public async Task<IActionResult> RunGpt(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    {
+        var process = _serviceProvider.GetRequiredService<IGptScheduleProcess>();
+        await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
         return Ok();
     }
 

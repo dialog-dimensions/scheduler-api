@@ -36,11 +36,17 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
     public int ScheduleShiftDuration { get; private set; }
 
 
-    public AutoScheduleProcess(IServiceProvider serviceProvider, IAutoScheduleProcessRepository autoRepository)
+    public AutoScheduleProcess(
+        IServiceProvider serviceProvider, IAutoScheduleProcessRepository autoRepository, IDeskRepository deskRepository, bool initialize = true)
     {
-        _autoRepository = autoRepository;
-        _serviceProvider = serviceProvider;
-        Initialize();
+        AutoRepository = autoRepository;
+        DeskRepository = deskRepository;
+        ServiceProvider = serviceProvider;
+        
+        if (initialize)
+        {
+            Initialize();
+        }
     }
 
     public AutoScheduleProcess() { }
@@ -52,7 +58,7 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         SaveChangesPending = false;
     }
 
-    private void HandleTimelineCaptured(object source, TimelineCapturedEventArgs e)
+    protected void HandleTimelineCaptured(object source, TimelineCapturedEventArgs e)
     {
         ProcessStart = e.ProcessStart;
         FileWindowEnd = e.FileWindowEnd;
@@ -60,14 +66,14 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         SaveChangesPending = true;
     }
 
-    private void Initialize()
+    protected void Initialize()
     {
         var strategy = _serviceProvider.GetRequiredService<IAutoScheduleStrategy>();
         strategy.TimelineCaptured += HandleTimelineCaptured;
         base.Initialize(strategy);
     }
 
-    private async Task Activate(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    protected async Task Activate(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var parameters = new object[] { desk, startDateTime, endDateTime, shiftDuration };
         await Proceed(parameters);
