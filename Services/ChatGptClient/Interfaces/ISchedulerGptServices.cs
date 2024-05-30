@@ -1,7 +1,4 @@
-﻿using SchedulerApi.Models.Entities;
-using SchedulerApi.Models.Entities.Workers;
-
-namespace SchedulerApi.Services.ChatGptClient.Interfaces;
+﻿namespace SchedulerApi.Services.ChatGptClient.Interfaces;
 
 public interface ISchedulerGptServices
 {

@@ -100,20 +100,16 @@ var keyVaultSecretNames = keyVaultParams.GetSection("SecretNames");
 var keyVaultJwtSecretNames = keyVaultSecretNames.GetSection("Jwt");
 var keyVaultTwilioSecretNames = keyVaultSecretNames.GetSection("Twilio");
 var keyVaultChatGptSecretNames = keyVaultSecretNames.GetSection("ChatGPT");
-
 var keyVaultUrl = keyVaultParams["Url"]!;
-
 var secretClient =
     new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
-
 builder.Services.AddSingleton(secretClient);
-
 var jwtKvSecret = secretClient.GetSecret(keyVaultJwtSecretNames["Secret"]);
 var twilioKvAccountAuthToken = secretClient.GetSecret(keyVaultTwilioSecretNames["AccountAuthToken"]);
-
 var jwtSecret = jwtKvSecret.Value.Value;
 var twilioAccountAuthToken = twilioKvAccountAuthToken.Value.Value;
 
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -132,7 +128,9 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
         };
     });
+builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
 
+// Twilio
 var twilioClient = new HttpClient
 {
     BaseAddress = new Uri(builder.Configuration["Twilio:BaseUrl"]!),
@@ -140,6 +138,7 @@ var twilioClient = new HttpClient
 twilioClient.DefaultRequestHeaders.Authorization =
     new AuthenticationHeaderValue("Bearer", twilioAccountAuthToken);
 builder.Services.AddSingleton(twilioClient);
+builder.Services.AddScoped<ITwilioServices, TwilioServices>();
 
 // ChatGPT
 var chatGptKvApiKey = secretClient.GetSecret(keyVaultChatGptSecretNames["ApiKey"]);
@@ -152,17 +151,17 @@ builder.Services.AddSingleton<IAssistantServices, AssistantServices>();
 builder.Services.AddScoped<ISchedulerGptServices, SchedulerGptServices>();
 builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
-builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
-
-builder.Services.AddTransient<IScheduleFactory, ScheduleFactory>();
-builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
-builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+// Entity Model Services
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
+builder.Services.AddTransient<IScheduleFactory, ScheduleFactory>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IShiftExceptionRepository, ShiftExceptionRepository>();
 builder.Services.AddScoped<IDeskRepository, DeskRepository>();
 builder.Services.AddScoped<IUnitRepository, UnitRepository>();
 builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
+// Schedule Engine Services
 builder.Services.AddTransient<IQuotaCalculator, QuotaCalculator>();
 builder.Services.AddTransient<IAssignmentScorer, AssignmentScorer>();
 builder.Services.AddScoped<IBalancer, Balancer>();
@@ -175,6 +174,7 @@ builder.Services.AddTransient<IScheduleScorer, ScheduleScorer>();
 builder.Services.AddTransient<IScheduleReportBuilder, ScheduleReportBuilder>();
 builder.Services.AddTransient<IScheduler, Scheduler>();
 
+// Process Services
 builder.Services.AddScoped<IAutoScheduleStrategy, AutoScheduleStrategy>();
 builder.Services.AddScoped<IGptStrategy, GptStrategy>();
 builder.Services.AddScoped<IAutoScheduleProcess, AutoScheduleProcess>();
@@ -182,13 +182,15 @@ builder.Services.AddScoped<IGptScheduleProcess, GptScheduleProcess>();
 builder.Services.AddScoped<IRepository<Step>, StepRepository>();
 builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRepository>();
 builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
-builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRepository>();
-builder.Services.AddScoped<IRepository<Step>, StepRepository>();
 builder.Services.AddTransient<IStep, Step>();
 
+// Job Services
+builder.Services.AddTransient<ISchedulingProcessInitiator, SchedulingProcessInitiator>();
+builder.Services.AddSingleton<IJobSchedulingService, JobSchedulingService>();
+
+// EF Core
 builder.Services.AddDbContext<ApiDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 builder.Services
     .AddDefaultIdentity<IdentityUser>(options =>
     {
@@ -203,8 +205,7 @@ builder.Services
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApiDbContext>();
 
-builder.Services.AddRouting();
-
+// Localization and Globalization
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     var supportedCultures = new[] { new CultureInfo("he-IL") };
@@ -213,10 +214,19 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedUICultures = supportedCultures;
 });
 
+// Hangfire
+builder.Services.AddHangfire(configuration => configuration
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
+
+// Job Initializations
+
+
+// 
+builder.Services.AddRouting();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-
 app.UseSwagger();
 app.UseSwaggerUI();
 

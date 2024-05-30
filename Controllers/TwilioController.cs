@@ -7,8 +7,6 @@ using SchedulerApi.Models.DTOs;
 using SchedulerApi.Services.ChatGptClient.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using Twilio.AspNet.Common;
-using Twilio.AspNet.Mvc;
-using Twilio.TwiML.Messaging;
 
 namespace SchedulerApi.Controllers;
 

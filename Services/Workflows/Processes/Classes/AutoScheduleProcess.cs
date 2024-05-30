@@ -8,9 +8,10 @@ namespace SchedulerApi.Services.Workflows.Processes.Classes;
 
 public class AutoScheduleProcess : Process, IAutoScheduleProcess
 {
-    private readonly IAutoScheduleProcessRepository _autoRepository;
-    private readonly IServiceProvider _serviceProvider;
-    
+    protected IAutoScheduleProcessRepository AutoRepository { get; set; }
+    protected IDeskRepository DeskRepository { get; set; }
+    protected IServiceProvider ServiceProvider { get; set; }
+
     // TIMELINE
     public DateTime ProcessStart { get; private set; }
     public DateTime FileWindowEnd { get; private set; }
@@ -54,7 +55,7 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     protected override async Task SaveChangesAsync()
     {
-        await _autoRepository.UpdateAsync(this);
+        await AutoRepository.UpdateAsync(this);
         SaveChangesPending = false;
     }
 
@@ -68,7 +69,7 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
     protected void Initialize()
     {
-        var strategy = _serviceProvider.GetRequiredService<IAutoScheduleStrategy>();
+        var strategy = ServiceProvider.GetRequiredService<IAutoScheduleStrategy>();
         strategy.TimelineCaptured += HandleTimelineCaptured;
         base.Initialize(strategy);
     }
@@ -79,8 +80,14 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         await Proceed(parameters);
     }
 
-    public async Task Run(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
+        var desk = await DeskRepository.ReadAsync(deskId);
+        if (desk is null)
+        {
+            return;
+        }
+        
         Desk = desk;
         ScheduleStart = startDateTime;
         ScheduleEnd = endDateTime;

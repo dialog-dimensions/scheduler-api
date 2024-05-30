@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.VisualBasic.CompilerServices;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Enums;
 using SchedulerApi.Models.ChatGPT;

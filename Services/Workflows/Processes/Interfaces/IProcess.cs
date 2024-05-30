@@ -4,7 +4,7 @@ using SchedulerApi.Models.Interfaces;
 using SchedulerApi.Services.Workflows.Steps;
 using SchedulerApi.Services.Workflows.Strategies;
 
-namespace SchedulerApi.Services.Workflows.Processes;
+namespace SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 public interface IProcess : IKeyProvider
 {

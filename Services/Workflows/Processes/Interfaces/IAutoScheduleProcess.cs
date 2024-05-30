@@ -12,5 +12,5 @@ public interface IAutoScheduleProcess : IProcess
     public DateTime ScheduleEnd { get; }
     public int ScheduleShiftDuration { get; }
 
-    Task Run(Desk desk, DateTime startDateTime, DateTime endDateTime, int shiftDuration);
+    Task Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration);
 }

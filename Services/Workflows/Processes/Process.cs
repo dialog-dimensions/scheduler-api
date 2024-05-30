@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using SchedulerApi.DAL.Repositories.Interfaces;
+using SchedulerApi.Services.Workflows.Processes.Interfaces;
 using SchedulerApi.Services.Workflows.Steps;
 using SchedulerApi.Services.Workflows.Strategies;
 

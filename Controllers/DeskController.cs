@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
+using SchedulerApi.Models.DTOs;
 using SchedulerApi.Models.DTOs.OrganizationEntities;
 
 namespace SchedulerApi.Controllers;
@@ -116,5 +117,13 @@ public class DeskController : Controller
     {
         var desks = await _repository.GetEmployeeDesks(employeeId);
         return desks.Select(DeskDto.FromEntity).ToList();
+    }
+
+    [HttpGet("desk-employees/{deskId}")]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<EmployeeDto>>> GetDeskEmployeesAsync(string deskId)
+    {
+        var employees = await _repository.GetDeskEmployees(deskId);
+        return employees.Select(emp => EmployeeDto.FromEntity(emp)).ToList();
     }
 }

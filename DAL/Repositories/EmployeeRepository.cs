@@ -13,6 +13,10 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
 
     public override async Task CreateAsync(Employee entity)
     {
+        if (entity.Unit is { } unit)
+        {
+            Context.Units.Attach(unit);
+        }
         Context.Employees.Add(entity);
         await Context.SaveChangesAsync();
     }
