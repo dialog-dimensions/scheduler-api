@@ -163,4 +163,20 @@ public class TwilioController : Controller
         await _gptServices.ProcessIncomingMessage(session.ThreadId, twilioMessage.Body);
         return Ok();
     }
+
+    [HttpPost("publish-media")]
+    [Authorize]
+    public async Task<IActionResult> PublishShiftsMediaAsync(string deskId, DateTime scheduleStartDateTime)
+    {
+        var data = await _scheduleRepository.GetScheduleData(deskId, scheduleStartDateTime);
+        var schedule = await _scheduleRepository.ReadAsync((deskId, scheduleStartDateTime));
+        data.Schedule = schedule!;
+        foreach (var employee in data.Employees)
+        {
+            var user = await _userManager.FindByIdAsync(employee.Id.ToString());
+            await _twilioServices.TriggerPublishShiftsMediaFlow(user!.PhoneNumber!, employee.Name, schedule!, employee);
+        }
+
+        return Ok();
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities;
+using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Services.WhatsAppClient.Twilio;
@@ -13,4 +14,5 @@ public interface ITwilioServices
     Task TriggerCallToRegisterFlow(string userName, string userId, string phoneNumber);
     Task TriggerCallToFileGptFlow(string phoneNumber, string userName, Gender gender, Schedule schedule, DateTime fileWindowEndDateTime);
     Task SendFreeFormMessage(string message, string phoneNumber);
+    Task TriggerPublishShiftsMediaFlow(string phoneNumber, string userName, Schedule schedule, Employee employee);
 }

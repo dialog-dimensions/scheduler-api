@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
@@ -19,11 +20,16 @@ using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
 using SchedulerApi.Services.ChatGptClient;
 using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Services.ImageGenerationServices.HtmlToImage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleToHtmlTable;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleToImage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
 using SchedulerApi.Services.JWT;
 using SchedulerApi.Services.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Comparers;
 using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
+using SchedulerApi.Services.Storage;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
@@ -93,6 +99,19 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+
+// Blob Storage Service
+var blobServiceConnectionString = builder.Configuration["ConnectionStrings:AzureBlobStorage"]!;
+var blobServiceClient = new BlobServiceClient(blobServiceConnectionString);
+builder.Services.AddSingleton(blobServiceClient);
+builder.Services.AddTransient<IBlobStorageServices, BlobStorageServices>();
+
+// Schedule Image Services
+builder.Services.AddTransient<IScheduleHtmlTableGenerator, ScheduleHtmlTableGenerator>();
+builder.Services.AddTransient<IHtmlImageGenerator, HtmlImageGenerator>();
+builder.Services.AddTransient<IScheduleImageGenerator, ScheduleImageGenerator>();
+builder.Services.AddTransient<IScheduleImageService, ScheduleImageService>();
 
 // secrets, auth tokens and sids.
 var keyVaultParams = builder.Configuration.GetSection("KeyVault");

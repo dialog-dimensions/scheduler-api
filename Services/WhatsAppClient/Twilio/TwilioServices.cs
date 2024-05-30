@@ -2,7 +2,9 @@
 using Azure.Security.KeyVault.Secrets;
 using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities;
+using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Organization;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Studio.V1.Flow;
@@ -93,6 +95,28 @@ public class TwilioServices : ITwilioServices
             from: new PhoneNumber(SenderPhoneNumber),
             to: new PhoneNumber(WhatsAppPhoneNumberFormat(phoneNumber))
         );
+    }
+
+    public async Task TriggerPublishShiftsMediaFlow(string phoneNumber, string userName, Schedule schedule, Employee employee)
+    {
+        var deskName = schedule.Desk.Name;
+        var blobName = IScheduleImageService.GetBlobName(schedule, employee);
+
+        var parameters = new Dictionary<string, object>
+        {
+            { "name", userName },
+            { "deskName", deskName },
+            { "blobName", blobName }
+        };
+
+        var execution = await ExecutionResource.CreateAsync(
+            parameters: parameters,
+            to: new PhoneNumber(PhoneNumberFormat(phoneNumber)),
+            from: new PhoneNumber(SenderPhoneNumber),
+            pathFlowSid: _flows["PublishShiftsMedia"]!
+        );
+
+        Console.WriteLine(execution.Sid);
     }
 
     public async Task TriggerCallToFileFlow(string phoneNumber, Desk desk, string userName, DateTime scheduleStartDateTime,

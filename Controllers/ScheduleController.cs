@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
 using SchedulerApi.Models.DTOs.ScheduleEngineModels;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 
 namespace SchedulerApi.Controllers;
@@ -12,12 +13,20 @@ namespace SchedulerApi.Controllers;
 public class ScheduleController : Controller
 {
     private readonly IScheduleRepository _repository;
+    private readonly IEmployeeRepository _employeeRepository;
     private readonly IScheduler _scheduler;
+    private readonly IScheduleImageService _imageService;
 
-    public ScheduleController(IScheduleRepository repository, IScheduler scheduler)
+    public ScheduleController(
+        IScheduleRepository repository, 
+        IScheduler scheduler, 
+        IScheduleImageService imageService, 
+        IEmployeeRepository employeeRepository)
     {
         _repository = repository;
         _scheduler = scheduler;
+        _imageService = imageService;
+        _employeeRepository = employeeRepository;
     }
 
 
@@ -167,4 +176,38 @@ public class ScheduleController : Controller
     //
     //     return NoContent();
     // }
+
+    [HttpPost("create-schedule-image")]
+    [Authorize]
+    public async Task<IActionResult> CreateScheduleImageAsync(string deskId, DateTime scheduleStartDateTime)
+    {
+        var schedule = await _repository.ReadAsync((deskId, scheduleStartDateTime));
+        if (schedule is null)
+        {
+            return NotFound("unable to find schedule in database.");
+        }
+
+        var url = await _imageService.Run(schedule);
+        return Content(url);
+    }
+    
+    [HttpPost("create-schedule-image/{employeeId:int}")]
+    [Authorize]
+    public async Task<IActionResult> CreateScheduleImageAsync(int employeeId, string deskId, DateTime scheduleStartDateTime)
+    {
+        var schedule = await _repository.ReadAsync((deskId, scheduleStartDateTime));
+        if (schedule is null)
+        {
+            return NotFound("unable to find schedule in database.");
+        }
+
+        var employee = await _employeeRepository.ReadAsync(employeeId);
+        if (employee is null)
+        {
+            return NotFound("unable to find employee in database.");
+        }
+
+        var url = await _imageService.Run(schedule, employee);
+        return Content(url);
+    }
 }
