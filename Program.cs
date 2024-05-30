@@ -35,7 +35,6 @@ using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
-using SchedulerApi.Services.Workflows.Scanners;
 using SchedulerApi.Services.Workflows.Steps;
 using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
@@ -178,7 +177,6 @@ builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IShiftExceptionRepository, ShiftExceptionRepository>();
 builder.Services.AddScoped<IDeskRepository, DeskRepository>();
 builder.Services.AddScoped<IUnitRepository, UnitRepository>();
-builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
 // Schedule Engine Services
 builder.Services.AddTransient<IQuotaCalculator, QuotaCalculator>();
