@@ -4,6 +4,7 @@ using System.Text;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using Azure.Storage.Blobs;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
@@ -31,6 +32,7 @@ using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.Storage;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
+using SchedulerApi.Services.Workflows.Jobs;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
@@ -283,11 +285,16 @@ app.UseRouting();
 // app.UseCors("WebAppPolicy");
 app.UseCors("BroadDevPolicy");
 
+var jobServices = app.Services.GetRequiredService<IJobSchedulingService>();
+jobServices.InitializeRecurringJob(IJobSchedulingService.ScannerJobId, IJobSchedulingService.ScannerCron);
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseHttpsRedirection();
+
+app.UseHangfireDashboard(); // Dashboard at `/hangfire`
+
 app.MapControllers();
 
 
