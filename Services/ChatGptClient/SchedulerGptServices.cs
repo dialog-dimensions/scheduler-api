@@ -95,7 +95,7 @@ public class SchedulerGptServices : ISchedulerGptServices
             throw new ApplicationException("error running the thread in the assistant");
         }
 
-        await Task.Delay(30000);
+        await Task.Delay(10000);
 
         // Load Session
         var session = await _sessionRepository.ReadAsync(threadId);
