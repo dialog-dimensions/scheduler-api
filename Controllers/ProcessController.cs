@@ -45,6 +45,6 @@ public class ProcessController : Controller
         var schedule = await scheduleRepository.ReadAsync((deskId, scheduleStartDateTime));
         var results = await scheduleEngine.RunAsync(schedule!);
         await scheduleRepository.AssignEmployees(deskId, scheduleStartDateTime, results.CompleteSchedule);
-        return Ok();
+        return results;
     }
 }
