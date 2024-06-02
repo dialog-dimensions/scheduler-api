@@ -1,6 +1,4 @@
-﻿using SchedulerApi.Models.Organization;
-
-namespace SchedulerApi.Services.Workflows.Processes.Interfaces;
+﻿namespace SchedulerApi.Services.Workflows.Processes.Interfaces;
 
 public interface IAutoScheduleProcess : IProcess
 {

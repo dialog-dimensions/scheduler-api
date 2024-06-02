@@ -80,7 +80,6 @@ public class Process : IProcess
         {
             throw new ArgumentException("Empty strategy given to the process.");
         }
-        
         Strategy = strategy;
         CurrentStep = Strategy.InitialStep!;
         Status = TaskStatus.WaitingToRun;
