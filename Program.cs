@@ -42,7 +42,6 @@ using SchedulerApi.Services.Workflows.Strategies.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-Console.WriteLine("builder created");
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -90,6 +89,7 @@ builder.Services.AddSwaggerGen(options =>
 //     });
 // });
 
+Console.WriteLine("adding CORS");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BroadDevPolicy", corsBuilder =>
@@ -115,21 +115,15 @@ builder.Services.AddTransient<IScheduleImageGenerator, ScheduleImageGenerator>()
 builder.Services.AddTransient<IScheduleImageService, ScheduleImageService>();
 
 // secrets, auth tokens and sids.
-var keyVaultParams = builder.Configuration.GetSection("KeyVault");
-var keyVaultSecretNames = keyVaultParams.GetSection("SecretNames");
-var keyVaultJwtSecretNames = keyVaultSecretNames.GetSection("Jwt");
-var keyVaultTwilioSecretNames = keyVaultSecretNames.GetSection("Twilio");
-var keyVaultChatGptSecretNames = keyVaultSecretNames.GetSection("ChatGPT");
-var keyVaultUrl = keyVaultParams["Url"]!;
+var keyVaultUrl = builder.Configuration["KeyVault:Url"]!;
 var secretClient =
     new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
 builder.Services.AddSingleton(secretClient);
-var jwtKvSecret = secretClient.GetSecret(keyVaultJwtSecretNames["Secret"]);
-var twilioKvAccountAuthToken = secretClient.GetSecret(keyVaultTwilioSecretNames["AccountAuthToken"]);
-var jwtSecret = jwtKvSecret.Value.Value;
-var twilioAccountAuthToken = twilioKvAccountAuthToken.Value.Value;
 
 // JWT Authentication
+var jwtKvSecret = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:Jwt:Secret"]);
+var jwtSecret = jwtKvSecret.Value.Value;
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -151,6 +145,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
 
 // Twilio
+var twilioKvAccountAuthToken = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:Twilio:AccountAuthToken"]);
+var twilioAccountAuthToken = twilioKvAccountAuthToken.Value.Value;
+
 var twilioClient = new HttpClient
 {
     BaseAddress = new Uri(builder.Configuration["Twilio:BaseUrl"]!),
@@ -161,7 +158,7 @@ builder.Services.AddSingleton(twilioClient);
 builder.Services.AddScoped<ITwilioServices, TwilioServices>();
 
 // ChatGPT
-var chatGptKvApiKey = secretClient.GetSecret(keyVaultChatGptSecretNames["ApiKey"]);
+var chatGptKvApiKey = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:ChatGPT:ApiKey"]);
 builder.Services.AddOpenAIService(settings =>
 {
     settings.ApiKey = chatGptKvApiKey.Value.Value;
