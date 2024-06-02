@@ -11,10 +11,11 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
     {
     }
 
-    public override async Task CreateAsync(ShiftException entity)
+    public override async Task<object> CreateAsync(ShiftException entity)
     {
-        Context.Exceptions.Add(entity);
+        var entityEntry = Context.Exceptions.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<ShiftException?> ReadAsync(object key)

@@ -3,7 +3,6 @@ using SchedulerApi.DAL.Repositories.BaseClasses;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
-using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.DAL.Repositories;
 
@@ -13,7 +12,7 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
     {
     }
 
-    public override Task CreateAsync(Shift entity)
+    public override Task<object> CreateAsync(Shift entity)
     {
         throw new NotImplementedException();
     }

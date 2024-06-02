@@ -11,14 +11,15 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
     {
     }
 
-    public override async Task CreateAsync(Employee entity)
+    public override async Task<object> CreateAsync(Employee entity)
     {
         if (entity.Unit is { } unit)
         {
             Context.Units.Attach(unit);
         }
-        Context.Employees.Add(entity);
+        var entityEntry = Context.Employees.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<Employee?> ReadAsync(object key)

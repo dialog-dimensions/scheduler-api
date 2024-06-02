@@ -11,10 +11,11 @@ public class StepRepository : Repository<Step>, IRepository<Step>
     {
     }
 
-    public override async Task CreateAsync(Step entity)
+    public override async Task<object> CreateAsync(Step entity)
     {
-        Context.Steps.Add(entity);
+        var entityEntry = Context.Steps.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<Step?> ReadAsync(object key)

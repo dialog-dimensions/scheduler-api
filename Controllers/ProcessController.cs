@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
-using SchedulerApi.Models.DTOs.OrganizationEntities;
 using SchedulerApi.Models.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
@@ -21,20 +20,20 @@ public class ProcessController : Controller
 
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task<ActionResult<int>> Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var process = _serviceProvider.GetRequiredService<IAutoScheduleProcess>();
-        await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
-        return Ok();
+        var id = await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
+        return id;
     }
     
     [HttpPost("gpt")]
     [Authorize(Roles = "Admin,Manager")]
-    public async Task<IActionResult> RunGpt(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task<ActionResult<int>> RunGpt(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var process = _serviceProvider.GetRequiredService<IGptScheduleProcess>();
-        await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
-        return Ok();
+        var id = await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
+        return id;
     }
 
     [HttpPost("runScheduler")]

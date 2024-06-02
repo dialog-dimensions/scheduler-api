@@ -12,7 +12,7 @@ public abstract class Repository<T> : IRepository<T> where T : IKeyProvider
         Context = context;
     }
 
-    public abstract Task CreateAsync(T entity);
+    public abstract Task<object> CreateAsync(T entity);
     public abstract Task<T?> ReadAsync(object key);
     public abstract Task<IEnumerable<T>> ReadAllAsync();
     

@@ -18,10 +18,11 @@ public class SchedulerGptSessionRepository : Repository<SchedulerGptSession>, IS
         _assistantServices = assistantServices;
     }
 
-    public override async Task CreateAsync(SchedulerGptSession entity)
+    public override async Task<object> CreateAsync(SchedulerGptSession entity)
     {
-        Context.SchedulerGptSessions.Add(entity);
+        var entityEntry = Context.SchedulerGptSessions.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
     
     public override async Task<SchedulerGptSession?> ReadAsync(object key)

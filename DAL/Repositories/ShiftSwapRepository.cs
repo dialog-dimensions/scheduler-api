@@ -11,10 +11,11 @@ public class ShiftSwapRepository : Repository<ShiftSwap>, IShiftSwapRepository
     {
     }
 
-    public override async Task CreateAsync(ShiftSwap entity)
+    public override async Task<object> CreateAsync(ShiftSwap entity)
     {
-        Context.Swaps.Add(entity);
+        var entityEntry = Context.Swaps.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<ShiftSwap?> ReadAsync(object key)

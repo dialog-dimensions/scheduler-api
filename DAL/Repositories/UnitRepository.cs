@@ -3,6 +3,7 @@ using SchedulerApi.DAL.Repositories.BaseClasses;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.DataStructures.Tree;
 using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Models.Entities.Workers.BaseClasses;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.DAL.Repositories;
@@ -13,10 +14,11 @@ public class UnitRepository : Repository<Unit>, IUnitRepository
     {
     }
 
-    public override async Task CreateAsync(Unit entity)
+    public override async Task<object> CreateAsync(Unit entity)
     {
-        Context.Units.Add(entity);
+        var entityEntry = Context.Units.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<Unit?> ReadAsync(object key)

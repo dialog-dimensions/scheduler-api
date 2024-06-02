@@ -23,10 +23,11 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
     }
 
 
-    public override async Task CreateAsync(Schedule entity)
-    {
+    public override async Task<object> CreateAsync(Schedule entity)
+    { 
         Context.Shifts.AddRange(entity);
         await Context.SaveChangesAsync();
+        return entity.Key;
     }
 
     public override async Task<Schedule?> ReadAsync(object key)

@@ -4,7 +4,7 @@ namespace SchedulerApi.DAL.Repositories.Interfaces;
 
 public interface IRepository<T> where T : IKeyProvider
 {
-    Task CreateAsync(T entity);
+    Task<object> CreateAsync(T entity);
 
     Task<T?> ReadAsync(object key);
 

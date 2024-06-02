@@ -13,10 +13,11 @@ public class AutoScheduleProcessRepository : Repository<AutoScheduleProcess>, IA
     {
     }
 
-    public override async Task CreateAsync(AutoScheduleProcess entity)
+    public override async Task<object> CreateAsync(AutoScheduleProcess entity)
     {
-        Context.AutoScheduleProcesses.Add(entity);
+        var entityEntry = Context.AutoScheduleProcesses.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<AutoScheduleProcess?> ReadAsync(object key)

@@ -12,15 +12,16 @@ public class DeskRepository : Repository<Desk>, IDeskRepository
     {
     }
 
-    public override async Task CreateAsync(Desk entity)
+    public override async Task<object> CreateAsync(Desk entity)
     {
         if (entity.Unit is not null)
         {
             Context.Units.Attach(entity.Unit);
         }
         
-        Context.Desks.Add(entity);
+        var entityEntry = Context.Desks.Add(entity);
         await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
 
     public override async Task<Desk?> ReadAsync(object key)
