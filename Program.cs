@@ -89,7 +89,7 @@ builder.Services.AddSwaggerGen(options =>
 //     });
 // });
 
-Console.WriteLine("adding CORS");
+Console.WriteLine("Adding CORS.");
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("BroadDevPolicy", corsBuilder =>
@@ -101,28 +101,36 @@ builder.Services.AddCors(options =>
     });
 });
 
-
+Console.WriteLine("Adding Blob Storage Services.");
 // Blob Storage Service
 var blobServiceConnectionString = builder.Configuration["ConnectionStrings:AzureBlobStorage"]!;
+Console.WriteLine($"blobServiceConnectionString: {blobServiceConnectionString}");
+
 var blobServiceClient = new BlobServiceClient(blobServiceConnectionString);
 builder.Services.AddSingleton(blobServiceClient);
 builder.Services.AddTransient<IBlobStorageServices, BlobStorageServices>();
 
+Console.WriteLine("Adding Schedule Image Services.");
 // Schedule Image Services
 builder.Services.AddTransient<IScheduleHtmlTableGenerator, ScheduleHtmlTableGenerator>();
 builder.Services.AddTransient<IHtmlImageGenerator, HtmlImageGenerator>();
 builder.Services.AddTransient<IScheduleImageGenerator, ScheduleImageGenerator>();
 builder.Services.AddTransient<IScheduleImageService, ScheduleImageService>();
 
+Console.WriteLine("Adding Secret Client.");
 // secrets, auth tokens and sids.
 var keyVaultUrl = builder.Configuration["KeyVault:Url"]!;
+Console.WriteLine($"keyVaultUrl is {keyVaultUrl}");
+
 var secretClient =
     new SecretClient(new Uri(keyVaultUrl), new DefaultAzureCredential());
 builder.Services.AddSingleton(secretClient);
 
+Console.WriteLine("Adding JWT Authentication.");
 // JWT Authentication
 var jwtKvSecret = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:Jwt:Secret"]);
 var jwtSecret = jwtKvSecret.Value.Value;
+Console.WriteLine($"jwtSecret is {jwtSecret}");
 
 builder.Services.AddAuthentication(options =>
     {
@@ -144,9 +152,11 @@ builder.Services.AddAuthentication(options =>
     });
 builder.Services.AddTransient<IJwtGenerator, JwtGenerator>();
 
+Console.WriteLine("Adding Twilio Client and Services.");
 // Twilio
 var twilioKvAccountAuthToken = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:Twilio:AccountAuthToken"]);
 var twilioAccountAuthToken = twilioKvAccountAuthToken.Value.Value;
+Console.WriteLine($"twilioAccountAuthToken is {twilioAccountAuthToken}");
 
 var twilioClient = new HttpClient
 {
@@ -157,17 +167,22 @@ twilioClient.DefaultRequestHeaders.Authorization =
 builder.Services.AddSingleton(twilioClient);
 builder.Services.AddScoped<ITwilioServices, TwilioServices>();
 
+Console.WriteLine("Adding ChatGPT Services.");
 // ChatGPT
 var chatGptKvApiKey = secretClient.GetSecret(builder.Configuration["KeyVault:SecretNames:ChatGPT:ApiKey"]);
+var chatGptApiKey = chatGptKvApiKey.Value.Value;
+Console.WriteLine($"chatGptApiKey is {chatGptApiKey}");
+
 builder.Services.AddOpenAIService(settings =>
 {
-    settings.ApiKey = chatGptKvApiKey.Value.Value;
+    settings.ApiKey = chatGptApiKey;
     settings.UseBeta = true;
 });
 builder.Services.AddSingleton<IAssistantServices, AssistantServices>();
 builder.Services.AddScoped<ISchedulerGptServices, SchedulerGptServices>();
 builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 
+Console.WriteLine("Adding Repositories.");
 // Entity Model Services
 builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
@@ -177,6 +192,7 @@ builder.Services.AddScoped<IShiftExceptionRepository, ShiftExceptionRepository>(
 builder.Services.AddScoped<IDeskRepository, DeskRepository>();
 builder.Services.AddScoped<IUnitRepository, UnitRepository>();
 
+Console.WriteLine("Adding Schedule Engine Services.");
 // Schedule Engine Services
 builder.Services.AddTransient<IQuotaCalculator, QuotaCalculator>();
 builder.Services.AddTransient<IAssignmentScorer, AssignmentScorer>();
@@ -190,6 +206,7 @@ builder.Services.AddTransient<IScheduleScorer, ScheduleScorer>();
 builder.Services.AddTransient<IScheduleReportBuilder, ScheduleReportBuilder>();
 builder.Services.AddTransient<IScheduler, Scheduler>();
 
+Console.WriteLine("Adding Process Services.");
 // Process Services
 builder.Services.AddScoped<IAutoScheduleStrategy, AutoScheduleStrategy>();
 builder.Services.AddScoped<IGptStrategy, GptStrategy>();
@@ -200,9 +217,11 @@ builder.Services.AddScoped<IAutoScheduleProcessRepository, AutoScheduleProcessRe
 builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFactory>();
 builder.Services.AddTransient<IStep, Step>();
 
+Console.WriteLine("Adding Job Services.");
 // Job Services
 builder.Services.AddScoped<IGptScheduleProcessProcedures, GptScheduleProcessProcedures>();
 
+Console.WriteLine("Adding DB Context Services.");
 // EF Core
 builder.Services.AddDbContext<ApiDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -220,6 +239,7 @@ builder.Services
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApiDbContext>();
 
+Console.WriteLine("Configuring Localization and Globalization.");
 // Localization and Globalization
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
@@ -229,6 +249,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.SupportedUICultures = supportedCultures;
 });
 
+Console.WriteLine("Adding Hangfire Services.");
 // Hangfire
 builder.Services.AddHangfire(configuration => configuration
     .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -236,7 +257,11 @@ builder.Services.AddHangfireServer();
 
 
 // 
+
+Console.WriteLine("Adding Routing.");
 builder.Services.AddRouting();
+
+Console.WriteLine("Building Application.");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
