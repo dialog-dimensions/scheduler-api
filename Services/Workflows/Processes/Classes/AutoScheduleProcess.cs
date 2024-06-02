@@ -2,6 +2,7 @@
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
+using SchedulerApi.Services.Workflows.Strategies;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Processes.Classes;
