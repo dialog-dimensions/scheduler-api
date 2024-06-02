@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Identity;
 using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
@@ -7,6 +8,7 @@ using SchedulerApi.Services.ChatGptClient.Interfaces;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
+using SchedulerApi.Services.Workflows.Jobs.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
 namespace SchedulerApi.Services.Workflows.Strategies.Classes;
@@ -24,12 +26,13 @@ public sealed class GptStrategy : Strategy, IGptStrategy
     private readonly IScheduleImageService _scheduleImageService;
     private readonly IConfigurationSection _params;
     private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
+    private readonly IBackgroundJobClient _backgroundJobClient;
 
     public DateTime ProcessStart { get; private set; }
     public DateTime FileWindowEnd { get; private set; }
     public DateTime ProcessEnd { get; private set; }
     public DateTime ScheduleStart { get; private set; }
-
+    
     private Desk _desk;
     public Desk Desk
     {
@@ -56,7 +59,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         IServiceProvider serviceProvider, 
         IDeskRepository deskRepository, 
         ISchedulerGptServices gptServices, 
-        IScheduleImageService scheduleImageService) : base(serviceProvider)
+        IScheduleImageService scheduleImageService, IBackgroundJobClient backgroundJobClient) : base(serviceProvider)
     {
         _scheduleRepository = scheduleRepository;
         _employeeRepository = employeeRepository;
@@ -67,6 +70,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         _deskRepository = deskRepository;
         _gptServices = gptServices;
         _scheduleImageService = scheduleImageService;
+        _backgroundJobClient = backgroundJobClient;
 
         _params = configuration.GetSection("Params:Processes:AutoSchedule");
         Construct();
@@ -130,165 +134,179 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         await CreateGptSessionsForEmployees();
     }
     
-    private static async Task Await(TimeSpan timeSpan)
+    // private static async Task Await(TimeSpan timeSpan)
+    // {
+    //     var delay = timeSpan < TimeSpan.Zero ? TimeSpan.Zero : timeSpan;
+    //     await Task.Delay(delay);
+    // }
+
+    // private async Task AwaitGather()
+    // {
+    //     await Await(FileWindowEnd.Subtract(DateTime.Now));
+    // }
+    //
+    // private async Task AwaitGatherAsync(object[] parameters)
+    // {
+    //     await AwaitGather();
+    // }
+
+    private void ScheduleNextPhase()
     {
-        var delay = timeSpan < TimeSpan.Zero ? TimeSpan.Zero : timeSpan;
-        await Task.Delay(delay);
+        _backgroundJobClient.Schedule<GptProcessAfterGatheringJob>(
+            job => job.Execute(ProcessId),
+            FileWindowEnd.Subtract(DateTime.Now)
+        );
     }
 
-    private async Task AwaitGather()
+    private async Task ScheduleNextPhaseAsync(object[] parameters)
     {
-        await Await(FileWindowEnd.Subtract(DateTime.Now));
+        await Task.Delay(10);
+        ScheduleNextPhase();
     }
 
-    private async Task AwaitGatherAsync(object[] parameters)
-    {
-        await AwaitGather();
-    }
-
-    private async Task RunScheduler()
-    {
-        var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
-        if (schedule is null)
-        {
-            throw new KeyNotFoundException("Schedule not found in database.");
-        }
-
-        var results = await _scheduler.RunAsync(schedule);
-        await _scheduleRepository.AssignEmployees(Desk.Id, ScheduleStart, results.CompleteSchedule);
-    }
-
-    private async Task RunSchedulerAsync(object[] parameters)
-    {
-        await RunScheduler();
-    }
-
-    private async Task NotifyManagerScheduleReady()
-    {
-        var managers = (await _employeeRepository.GetUnitManagers(Desk.UnitId)).ToList();
-        if (managers.Count == 0)
-        {
-            return;
-        }
-
-        var users = new List<IdentityUser>();
-        foreach (var manager in managers)
-        {
-            var user = await _userManager.FindByIdAsync(manager.Id.ToString());
-            if (user is null)
-            {
-                continue;
-            }
-
-            users.Add(user);
-        }
-
-        if (users.Count == 0)
-        {
-            return;
-        }
-
-        foreach (var user in users)
-        {
-            var manager = managers.Find(manager => manager.Id.ToString() == user.Id);
-            if (manager is null)
-            {
-                throw new KeyNotFoundException("problem linking a manager instance to the manager user instance");
-            }
-            
-            await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, Desk, manager.Name, ScheduleStart, ProcessEnd);
-            await Await(_messageBufferTime);
-        }
-    }
-
-    private async Task NotifyManagerScheduleReadyAsync(object[] parameters)
-    {
-        await NotifyManagerScheduleReady();
-    }
-
-    private async Task AwaitApproval()
-    {
-        var actualApproveWindowDuration = ProcessEnd.Subtract(DateTime.Now);
-        await Await(actualApproveWindowDuration);
-    }
-
-    private async Task AwaitApprovalAsync(object[] parameters)
-    {
-        await AwaitApproval();
-    }
-
-    private async Task CommitSchedule()
-    {
-        var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
-        if (schedule is null)
-        {
-            return;
-        }
-
-        var report = await _scheduleRepository.GetScheduleReport(schedule);
-        foreach (var increments in report.Increments)
-        {
-            await _employeeRepository.IncrementRegularBalance(increments.EmployeeId, increments.RegularIncrement);
-            await _employeeRepository.IncrementDifficultBalance(increments.EmployeeId, increments.DifficultIncrement);
-        }
-    }
-
-    private async Task CommitScheduleAsync(object[] parameters)
-    {
-        await CommitSchedule();
-    }
-
-    private async Task CreateCustomScheduleImages()
-    {
-        var data = await _scheduleRepository.GetScheduleData(DeskId, ScheduleStart);
-        var schedule = await _scheduleRepository.ReadAsync((DeskId, ScheduleStart));
-        if (schedule is null)
-        {
-            return;
-        }
-        data.Schedule = schedule;
-
-        foreach (var employee in data.Employees)
-        {
-            await _scheduleImageService.Run(schedule, employee);
-        }
-    }
-
-    private async Task CreateCustomScheduleImagesAsync(object[] parameter)
-    {
-        await CreateCustomScheduleImages();
-    }
-
-    private async Task PublishSchedule()
-    {
-        var data = await _scheduleRepository.GetScheduleData(DeskId, ScheduleStart);
-        var schedule = await _scheduleRepository.ReadAsync((DeskId, ScheduleStart));
-        if (schedule is null)
-        {
-            return;
-        }
-        data.Schedule = schedule;
-        
-        foreach (var employee in data.Employees)
-        {
-            var user = await _userManager.FindByIdAsync(employee.Id.ToString());
-            if (user is null)
-            {
-                continue;
-            }
-
-            var phoneNumber = user.PhoneNumber!;
-            var userName = employee.Name;
-
-            await _twilio.TriggerPublishShiftsMediaFlow(phoneNumber, userName, schedule, employee);
-            await Task.Delay(_messageBufferTime);
-        }
-    }
-
-    private async Task PublishScheduleAsync(object[] parameters)
-    {
-        await PublishSchedule();
-    }
+    // private async Task RunScheduler()
+    // {
+    //     var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
+    //     if (schedule is null)
+    //     {
+    //         throw new KeyNotFoundException("Schedule not found in database.");
+    //     }
+    //
+    //     var results = await _scheduler.RunAsync(schedule);
+    //     await _scheduleRepository.AssignEmployees(Desk.Id, ScheduleStart, results.CompleteSchedule);
+    // }
+    //
+    // private async Task RunSchedulerAsync(object[] parameters)
+    // {
+    //     await RunScheduler();
+    // }
+    //
+    // private async Task NotifyManagerScheduleReady()
+    // {
+    //     var managers = (await _employeeRepository.GetUnitManagers(Desk.UnitId)).ToList();
+    //     if (managers.Count == 0)
+    //     {
+    //         return;
+    //     }
+    //
+    //     var users = new List<IdentityUser>();
+    //     foreach (var manager in managers)
+    //     {
+    //         var user = await _userManager.FindByIdAsync(manager.Id.ToString());
+    //         if (user is null)
+    //         {
+    //             continue;
+    //         }
+    //
+    //         users.Add(user);
+    //     }
+    //
+    //     if (users.Count == 0)
+    //     {
+    //         return;
+    //     }
+    //
+    //     foreach (var user in users)
+    //     {
+    //         var manager = managers.Find(manager => manager.Id.ToString() == user.Id);
+    //         if (manager is null)
+    //         {
+    //             throw new KeyNotFoundException("problem linking a manager instance to the manager user instance");
+    //         }
+    //         
+    //         await _twilio.TriggerNotifyManagerFlow(user.PhoneNumber!, Desk, manager.Name, ScheduleStart, ProcessEnd);
+    //         await Await(_messageBufferTime);
+    //     }
+    // }
+    //
+    // private async Task NotifyManagerScheduleReadyAsync(object[] parameters)
+    // {
+    //     await NotifyManagerScheduleReady();
+    // }
+    //
+    // private async Task AwaitApproval()
+    // {
+    //     var actualApproveWindowDuration = ProcessEnd.Subtract(DateTime.Now);
+    //     await Await(actualApproveWindowDuration);
+    // }
+    //
+    // private async Task AwaitApprovalAsync(object[] parameters)
+    // {
+    //     await AwaitApproval();
+    // }
+    //
+    // private async Task CommitSchedule()
+    // {
+    //     var schedule = await _scheduleRepository.ReadAsync((Desk.Id, ScheduleStart));
+    //     if (schedule is null)
+    //     {
+    //         return;
+    //     }
+    //
+    //     var report = await _scheduleRepository.GetScheduleReport(schedule);
+    //     foreach (var increments in report.Increments)
+    //     {
+    //         await _employeeRepository.IncrementRegularBalance(increments.EmployeeId, increments.RegularIncrement);
+    //         await _employeeRepository.IncrementDifficultBalance(increments.EmployeeId, increments.DifficultIncrement);
+    //     }
+    // }
+    //
+    // private async Task CommitScheduleAsync(object[] parameters)
+    // {
+    //     await CommitSchedule();
+    // }
+    //
+    // private async Task CreateCustomScheduleImages()
+    // {
+    //     var data = await _scheduleRepository.GetScheduleData(DeskId, ScheduleStart);
+    //     var schedule = await _scheduleRepository.ReadAsync((DeskId, ScheduleStart));
+    //     if (schedule is null)
+    //     {
+    //         return;
+    //     }
+    //     data.Schedule = schedule;
+    //
+    //     foreach (var employee in data.Employees)
+    //     {
+    //         await _scheduleImageService.Run(schedule, employee);
+    //     }
+    // }
+    //
+    // private async Task CreateCustomScheduleImagesAsync(object[] parameter)
+    // {
+    //     await CreateCustomScheduleImages();
+    // }
+    //
+    // private async Task PublishSchedule()
+    // {
+    //     var data = await _scheduleRepository.GetScheduleData(DeskId, ScheduleStart);
+    //     var schedule = await _scheduleRepository.ReadAsync((DeskId, ScheduleStart));
+    //     if (schedule is null)
+    //     {
+    //         return;
+    //     }
+    //     data.Schedule = schedule;
+    //     
+    //     foreach (var employee in data.Employees)
+    //     {
+    //         var user = await _userManager.FindByIdAsync(employee.Id.ToString());
+    //         if (user is null)
+    //         {
+    //             continue;
+    //         }
+    //
+    //         var phoneNumber = user.PhoneNumber!;
+    //         var userName = employee.Name;
+    //
+    //         await _twilio.TriggerPublishShiftsMediaFlow(phoneNumber, userName, schedule, employee);
+    //         await Task.Delay(_messageBufferTime);
+    //     }
+    // }
+    //
+    // private async Task PublishScheduleAsync(object[] parameters)
+    // {
+    //     await PublishSchedule();
+    // }
 
 
     private void Construct()
@@ -297,13 +315,13 @@ public sealed class GptStrategy : Strategy, IGptStrategy
                  {
                      CreateShiftsAsync,
                      CreateGptSessionsForEmployeesAsync,
-                     AwaitGatherAsync,
-                     RunSchedulerAsync,
-                     NotifyManagerScheduleReadyAsync,
-                     AwaitApprovalAsync,
-                     CommitScheduleAsync,
-                     CreateCustomScheduleImagesAsync,
-                     PublishScheduleAsync
+                     ScheduleNextPhaseAsync
+                     // RunSchedulerAsync,
+                     // NotifyManagerScheduleReadyAsync,
+                     // AwaitApprovalAsync,
+                     // CommitScheduleAsync,
+                     // CreateCustomScheduleImagesAsync,
+                     // PublishScheduleAsync
                  })
         {
             AddStep(task);

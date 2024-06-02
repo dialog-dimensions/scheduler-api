@@ -34,7 +34,7 @@ public class Process : IProcess
     public TaskStatus Status
     {
         get => _status;
-        private set
+        set
         {
             _status = value;
             SaveChangesPending = true;
@@ -47,7 +47,7 @@ public class Process : IProcess
     public IStep? CurrentStep
     {
         get => _currentStep;
-        private set
+        set
         {
             _currentStep = value;
             CurrentStepName = value?.Task.Method.Name ?? string.Empty;
