@@ -26,6 +26,7 @@ using SchedulerApi.Services.ImageGenerationServices.ScheduleToHtmlTable;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleToImage;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
 using SchedulerApi.Services.JWT;
+using SchedulerApi.Services.JWT.AuthorizationFilters;
 using SchedulerApi.Services.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Comparers;
 using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
@@ -332,7 +333,10 @@ app.UseAuthorization();
 
 app.UseHttpsRedirection();
 
-app.UseHangfireDashboard(); // Dashboard at `/hangfire`
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new JwtAuthorizationFilter() } // TODO: implement bearer logic to the filter.
+}); 
 
 app.MapControllers();
 
