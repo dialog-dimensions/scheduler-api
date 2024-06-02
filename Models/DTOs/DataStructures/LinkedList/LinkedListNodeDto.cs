@@ -1,5 +1,4 @@
-﻿using SchedulerApi.DataStructures.LinkedList;
-using SchedulerApi.Models.DTOs.Interfaces;
+﻿using SchedulerApi.Models.DTOs.Interfaces;
 
 namespace SchedulerApi.Models.DTOs.DataStructures.LinkedList;
 

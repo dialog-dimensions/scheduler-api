@@ -6,9 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
-using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
-using SchedulerApi.Services.Workflows.Processes.Classes;
 
 namespace SchedulerApi.Controllers;
 

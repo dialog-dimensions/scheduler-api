@@ -1,6 +1,4 @@
-﻿using SchedulerApi.DataStructures.LinkedList;
-
-namespace SchedulerApi.DataStructures.Tree;
+﻿namespace SchedulerApi.DataStructures.Tree;
 
 public class TreeNode<T>
 {

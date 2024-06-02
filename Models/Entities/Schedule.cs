@@ -1,6 +1,5 @@
 ﻿using SchedulerApi.Models.Interfaces;
 using SchedulerApi.Models.Organization;
-using Twilio.TwiML.Voice;
 
 namespace SchedulerApi.Models.Entities;
 

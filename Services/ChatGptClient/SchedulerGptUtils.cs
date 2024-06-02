@@ -1,9 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Web.Helpers;
-using Newtonsoft.Json.Converters;
 using SchedulerApi.Enums;
-using SchedulerApi.Models.ChatGPT;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
 
