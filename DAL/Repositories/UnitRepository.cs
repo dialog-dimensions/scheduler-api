@@ -100,6 +100,11 @@ public class UnitRepository : Repository<Unit>, IUnitRepository
         return await Context.Employees.Where(emp => emp.UnitId == id).ToListAsync();
     }
 
+    public async Task<IEnumerable<Worker>> GetUnitManagers(string id)
+    {
+        return await Context.Employees.Where(emp => emp.Role == "Manager" && emp.UnitId == id).ToListAsync();
+    }
+
     private Organization GetSubOrganization(List<Unit> allUnits, Unit unit, TreeNode<Unit>? parentNode)
     {
         var myNode = new TreeNode<Unit>
