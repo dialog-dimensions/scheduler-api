@@ -32,7 +32,7 @@ using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.Storage;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
-using SchedulerApi.Services.Workflows.Jobs;
+using SchedulerApi.Services.Workflows.Procedures;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Interfaces;
@@ -204,8 +204,7 @@ builder.Services.AddTransient<IAutoScheduleProcessFactory, AutoScheduleProcessFa
 builder.Services.AddTransient<IStep, Step>();
 
 // Job Services
-builder.Services.AddTransient<ISchedulingProcessInitiator, SchedulingProcessInitiator>();
-builder.Services.AddSingleton<IJobSchedulingService, JobSchedulingService>();
+builder.Services.AddScoped<IGptScheduleProcessProcedures, GptScheduleProcessProcedures>();
 
 // EF Core
 builder.Services.AddDbContext<ApiDbContext>(options =>
@@ -237,8 +236,6 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 builder.Services.AddHangfire(configuration => configuration
     .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHangfireServer();
-
-// Job Initializations
 
 
 // 
@@ -280,13 +277,33 @@ else
 
 app.UseRequestLocalization();
 
-app.UseRouting();
+app.UseRouting();   
 
 // app.UseCors("WebAppPolicy");
 app.UseCors("BroadDevPolicy");
 
-var jobServices = app.Services.GetRequiredService<IJobSchedulingService>();
-jobServices.InitializeRecurringJob(IJobSchedulingService.ScannerJobId, IJobSchedulingService.ScannerCron);
+// Job Initializations
+// const string scannerJobId = "scanner";
+//
+// string scannerCronExpression;
+// string deskId;
+// if (app.Environment.IsDevelopment())
+// {
+//     scannerCronExpression = "*/30 * * * *";
+//     deskId = "4";
+// }
+// else
+// {
+//     scannerCronExpression = Cron.Daily(10);
+//     deskId = "1";
+// }
+
+// var recurringJobManager = app.Services.GetRequiredService<IRecurringJobManager>();
+// recurringJobManager.AddOrUpdate<GptProcessInitiationJob>(
+//     scannerJobId,
+//     job => job.Execute(deskId),
+//     scannerCronExpression
+//     );
 
 app.UseAuthentication();
 app.UseAuthorization();
