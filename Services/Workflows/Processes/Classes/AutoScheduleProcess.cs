@@ -38,7 +38,11 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
 
 
     public AutoScheduleProcess(
-        IServiceProvider serviceProvider, IAutoScheduleProcessRepository autoRepository, IDeskRepository deskRepository, bool initialize = true)
+        IServiceProvider serviceProvider, 
+        IAutoScheduleProcessRepository autoRepository, 
+        IDeskRepository deskRepository, 
+        IAutoScheduleStrategy strategy,
+        bool initialize = true)
     {
         AutoRepository = autoRepository;
         DeskRepository = deskRepository;
@@ -46,7 +50,7 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         
         if (initialize)
         {
-            Initialize();
+            Initialize(strategy);
         }
     }
 
@@ -67,10 +71,14 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         SaveChangesPending = true;
     }
 
-    protected void Initialize()
+    protected sealed override void Initialize(IStrategy strategy)
     {
-        var strategy = ServiceProvider.GetRequiredService<IAutoScheduleStrategy>();
-        strategy.TimelineCaptured += HandleTimelineCaptured;
+        if (strategy is IAutoScheduleStrategy autoScheduleStrategy)
+        {
+            autoScheduleStrategy.ProcessId = Id;
+            autoScheduleStrategy.TimelineCaptured += HandleTimelineCaptured;
+        }
+        
         base.Initialize(strategy);
     }
 
@@ -80,18 +88,21 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         await Proceed(parameters);
     }
 
-    public async Task Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
+    public async Task<int> Run(string deskId, DateTime startDateTime, DateTime endDateTime, int shiftDuration)
     {
         var desk = await DeskRepository.ReadAsync(deskId);
         if (desk is null)
         {
-            return;
+            return 0;
         }
         
         Desk = desk;
         ScheduleStart = startDateTime;
         ScheduleEnd = endDateTime;
         ScheduleShiftDuration = shiftDuration;
+
+        var key = await AutoRepository.CreateAsync(this);
+        Strategy!.ProcessId = Id;
         
         await Activate(desk, startDateTime, endDateTime, shiftDuration);
 
@@ -99,5 +110,12 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         {
             await Proceed();
         }
+
+        if (key is not int id)
+        {
+            return 0;
+        }
+        
+        return id;
     }
 }

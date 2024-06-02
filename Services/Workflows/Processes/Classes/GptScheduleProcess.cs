@@ -6,15 +6,19 @@ namespace SchedulerApi.Services.Workflows.Processes.Classes;
 
 public class GptScheduleProcess : AutoScheduleProcess, IGptScheduleProcess
 {
-    public GptScheduleProcess(IAutoScheduleProcessRepository processRepository, IDeskRepository deskRepository, IServiceProvider serviceProvider)
-    : base(serviceProvider, processRepository, deskRepository, false)
+    public GptScheduleProcess(
+        IAutoScheduleProcessRepository processRepository, 
+        IDeskRepository deskRepository, 
+        IServiceProvider serviceProvider,
+        IGptStrategy strategy)
+    : base(serviceProvider, processRepository, deskRepository, strategy, false)
     {
-        Initialize();
+        Initialize(strategy);
     }
     
-    public new void Initialize()
+    public void Initialize(IGptStrategy strategy)
     {
-        var strategy = ServiceProvider.GetRequiredService<IGptStrategy>();
+        strategy.ProcessId = Id;
         strategy.TimelineCaptured += HandleTimelineCaptured;
         base.Initialize(strategy);
     }

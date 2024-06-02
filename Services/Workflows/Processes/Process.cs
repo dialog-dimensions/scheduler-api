@@ -74,7 +74,7 @@ public class Process : IProcess
 
     }
 
-    protected void Initialize(IStrategy strategy)
+    protected virtual void Initialize(IStrategy strategy)
     {
         if (!strategy.HasSteps)
         {

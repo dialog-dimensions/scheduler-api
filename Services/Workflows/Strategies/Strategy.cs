@@ -5,7 +5,8 @@ namespace SchedulerApi.Services.Workflows.Strategies;
 public class Strategy : IStrategy
 {
     private readonly IServiceProvider _serviceProvider;
-    
+
+    public int ProcessId { get; set; }
     public IStep? InitialStep { get; private set; }
     private IStep? FinalStep { get; set; }
     public bool HasSteps => InitialStep is not null;
