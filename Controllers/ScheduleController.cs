@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
 using SchedulerApi.Models.DTOs.ScheduleEngineModels;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 
 namespace SchedulerApi.Controllers;
@@ -15,17 +15,17 @@ public class ScheduleController : Controller
     private readonly IScheduleRepository _repository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly IScheduler _scheduler;
-    private readonly IScheduleImageService _imageService;
+    private readonly IScheduleImagePublisher _imagePublisher;
 
     public ScheduleController(
         IScheduleRepository repository, 
-        IScheduler scheduler, 
-        IScheduleImageService imageService, 
-        IEmployeeRepository employeeRepository)
+        IScheduler scheduler,
+        IEmployeeRepository employeeRepository, 
+        IScheduleImagePublisher imagePublisher)
     {
         _repository = repository;
         _scheduler = scheduler;
-        _imageService = imageService;
+        _imagePublisher = imagePublisher;
         _employeeRepository = employeeRepository;
     }
 
@@ -207,7 +207,7 @@ public class ScheduleController : Controller
             return NotFound("unable to find employee in database.");
         }
 
-        var url = await _imageService.Run(schedule, employee);
+        var url = await _imagePublisher.PublishScheduleImage(schedule, employee);
         return Content(url);
     }
 }

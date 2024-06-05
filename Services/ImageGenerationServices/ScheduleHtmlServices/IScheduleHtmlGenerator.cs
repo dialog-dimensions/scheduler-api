@@ -1,9 +1,9 @@
 ﻿using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
 
-namespace SchedulerApi.Services.ImageGenerationServices.ScheduleToHtmlTable;
+namespace SchedulerApi.Services.ImageGenerationServices.ScheduleHtmlServices;
 
-public interface IScheduleHtmlTableGenerator
+public interface IScheduleHtmlGenerator
 {
     string Generate(Schedule schedule);
     string Generate(Schedule schedule, Employee employee);

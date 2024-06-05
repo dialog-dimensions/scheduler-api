@@ -32,4 +32,8 @@
       <Folder Include="Models\DTOs\DataStructures\Tree\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="Services\ImageGenerationServices\ScheduleHtmlServices\NewTmp.cs" />
+    </ItemGroup>
+
 </Project>

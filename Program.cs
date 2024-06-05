@@ -19,12 +19,11 @@ using SchedulerApi.DAL;
 using SchedulerApi.DAL.Repositories;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
+using SchedulerApi.Services.ApiFlashClient;
 using SchedulerApi.Services.ChatGptClient;
 using SchedulerApi.Services.ChatGptClient.Interfaces;
-using SchedulerApi.Services.ImageGenerationServices.HtmlToImage;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToHtmlTable;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImage;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleHtmlServices;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.JWT;
 using SchedulerApi.Services.JWT.AuthorizationFilters;
 using SchedulerApi.Services.ScheduleEngine;
@@ -113,10 +112,9 @@ builder.Services.AddTransient<IBlobStorageServices, BlobStorageServices>();
 
 Console.WriteLine("Adding Schedule Image Services.");
 // Schedule Image Services
-builder.Services.AddTransient<IScheduleHtmlTableGenerator, ScheduleHtmlTableGenerator>();
-builder.Services.AddTransient<IHtmlImageGenerator, HtmlImageGenerator>();
-builder.Services.AddTransient<IScheduleImageGenerator, ScheduleImageGenerator>();
-builder.Services.AddTransient<IScheduleImageService, ScheduleImageService>();
+builder.Services.AddTransient<IApiFlashClient, ApiFlashClient>();
+builder.Services.AddTransient<IScheduleHtmlGenerator, ScheduleHtmlGenerator>();
+builder.Services.AddTransient<IScheduleImagePublisher, ScheduleImagePublisher>();
 
 Console.WriteLine("Adding Secret Client.");
 // secrets, auth tokens and sids.

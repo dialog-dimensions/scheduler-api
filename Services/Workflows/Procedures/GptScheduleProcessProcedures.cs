@@ -129,7 +129,7 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
         var scheduleRepository = _serviceProvider.GetRequiredService<IScheduleRepository>();
         var employeeRepository = _serviceProvider.GetRequiredService<IEmployeeRepository>();
         var processRepository = _serviceProvider.GetRequiredService<IAutoScheduleProcessRepository>();
-        var scheduleImageService = _serviceProvider.GetRequiredService<IScheduleImageService>();
+        var scheduleImagePublisher = _serviceProvider.GetRequiredService<IScheduleImagePublisher>();
         var userManager = _serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
         var twilio = _serviceProvider.GetRequiredService<ITwilioServices>();
         var messageCooldown = TimeSpan.FromSeconds(5);
@@ -163,7 +163,7 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
 
         foreach (var employee in data.Employees)
         {
-            await scheduleImageService.Run(schedule, employee);
+            await scheduleImagePublisher.PublishScheduleImage(schedule, employee);
         }
         
         // Publish Schedule

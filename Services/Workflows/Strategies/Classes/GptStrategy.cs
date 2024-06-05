@@ -5,7 +5,7 @@ using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
 using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.ChatGptClient.Interfaces;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Jobs.Classes;
@@ -23,7 +23,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
     private readonly UserManager<IdentityUser> _userManager;
     private readonly ITwilioServices _twilio;
     private readonly ISchedulerGptServices _gptServices;
-    private readonly IScheduleImageService _scheduleImageService;
+    private readonly IScheduleImagePublisher _scheduleImagePublisher;
     private readonly IConfigurationSection _params;
     private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
     private readonly IBackgroundJobClient _backgroundJobClient;
@@ -59,7 +59,8 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         IServiceProvider serviceProvider, 
         IDeskRepository deskRepository, 
         ISchedulerGptServices gptServices, 
-        IScheduleImageService scheduleImageService, IBackgroundJobClient backgroundJobClient) : base(serviceProvider)
+        IScheduleImagePublisher scheduleImagePublisher, 
+        IBackgroundJobClient backgroundJobClient) : base(serviceProvider)
     {
         _scheduleRepository = scheduleRepository;
         _employeeRepository = employeeRepository;
@@ -69,7 +70,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         _twilio = twilio;
         _deskRepository = deskRepository;
         _gptServices = gptServices;
-        _scheduleImageService = scheduleImageService;
+        _scheduleImagePublisher = scheduleImagePublisher;
         _backgroundJobClient = backgroundJobClient;
 
         _params = configuration.GetSection("Params:Processes:AutoSchedule");
