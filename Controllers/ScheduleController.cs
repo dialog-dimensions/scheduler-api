@@ -177,19 +177,19 @@ public class ScheduleController : Controller
     //     return NoContent();
     // }
 
-    [HttpPost("create-schedule-image")]
-    [Authorize]
-    public async Task<IActionResult> CreateScheduleImageAsync(string deskId, DateTime scheduleStartDateTime)
-    {
-        var schedule = await _repository.ReadAsync((deskId, scheduleStartDateTime));
-        if (schedule is null)
-        {
-            return NotFound("unable to find schedule in database.");
-        }
-
-        var url = await _imageService.Run(schedule);
-        return Content(url);
-    }
+    // [HttpPost("create-schedule-image")]
+    // [Authorize]
+    // public async Task<IActionResult> CreateScheduleImageAsync(string deskId, DateTime scheduleStartDateTime)
+    // {
+    //     var schedule = await _repository.ReadAsync((deskId, scheduleStartDateTime));
+    //     if (schedule is null)
+    //     {
+    //         return NotFound("unable to find schedule in database.");
+    //     }
+    //
+    //     var url = await _imageService.Run(schedule);
+    //     return Content(url);
+    // }
     
     [HttpPost("create-schedule-image/{employeeId:int}")]
     [Authorize]
