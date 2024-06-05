@@ -1,13 +1,9 @@
 ﻿using Hangfire;
-using Microsoft.AspNetCore.Identity;
 using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
 using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.ChatGptClient.Interfaces;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
-using SchedulerApi.Services.ScheduleEngine.Interfaces;
-using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Jobs.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
@@ -16,16 +12,16 @@ namespace SchedulerApi.Services.Workflows.Strategies.Classes;
 public sealed class GptStrategy : Strategy, IGptStrategy
 {
     private readonly IScheduleRepository _scheduleRepository;
-    private readonly IEmployeeRepository _employeeRepository;
+    // private readonly IEmployeeRepository _employeeRepository;
     private readonly IDeskRepository _deskRepository;
     private readonly IScheduleFactory _scheduleFactory;
-    private readonly IScheduler _scheduler;
-    private readonly UserManager<IdentityUser> _userManager;
-    private readonly ITwilioServices _twilio;
+    // private readonly IScheduler _scheduler;
+    // private readonly UserManager<IdentityUser> _userManager;
+    // private readonly ITwilioServices _twilio;
     private readonly ISchedulerGptServices _gptServices;
-    private readonly IScheduleImagePublisher _scheduleImagePublisher;
-    private readonly IConfigurationSection _params;
-    private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
+    // private readonly IScheduleImagePublisher _scheduleImagePublisher;
+    // private readonly IConfigurationSection _params;
+    // private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
     private readonly IBackgroundJobClient _backgroundJobClient;
 
     public DateTime ProcessStart { get; private set; }
@@ -50,30 +46,30 @@ public sealed class GptStrategy : Strategy, IGptStrategy
     
     public GptStrategy(
         IScheduleRepository scheduleRepository,
-        IEmployeeRepository employeeRepository,
+        // IEmployeeRepository employeeRepository,
         IScheduleFactory scheduleFactory,
-        IScheduler scheduler,
-        UserManager<IdentityUser> userManager,
-        ITwilioServices twilio,
-        IConfiguration configuration,
+        // IScheduler scheduler,
+        // UserManager<IdentityUser> userManager,
+        // ITwilioServices twilio,
+        // IConfiguration configuration,
         IServiceProvider serviceProvider, 
         IDeskRepository deskRepository, 
         ISchedulerGptServices gptServices, 
-        IScheduleImagePublisher scheduleImagePublisher, 
+        // IScheduleImagePublisher scheduleImagePublisher, 
         IBackgroundJobClient backgroundJobClient) : base(serviceProvider)
     {
         _scheduleRepository = scheduleRepository;
-        _employeeRepository = employeeRepository;
+        // _employeeRepository = employeeRepository;
         _scheduleFactory = scheduleFactory;
-        _scheduler = scheduler;
-        _userManager = userManager;
-        _twilio = twilio;
+        // _scheduler = scheduler;
+        // _userManager = userManager;
+        // _twilio = twilio;
         _deskRepository = deskRepository;
         _gptServices = gptServices;
-        _scheduleImagePublisher = scheduleImagePublisher;
+        // _scheduleImagePublisher = scheduleImagePublisher;
         _backgroundJobClient = backgroundJobClient;
 
-        _params = configuration.GetSection("Params:Processes:AutoSchedule");
+        // _params = configuration.GetSection("Params:Processes:AutoSchedule");
         Construct();
     }
 
@@ -94,11 +90,11 @@ public sealed class GptStrategy : Strategy, IGptStrategy
     private void CaptureProcessTimeline(DateTime start)
     {
         var fileWindowDuration = Desk.ProcessParameters.FileWindowDuration;
-        var approvalWindowDuration = Desk.ProcessParameters.ApprovalWindowDuration;
+        var headsUpDuration = Desk.ProcessParameters.HeadsUpDuration;
         
         ProcessStart = DateTime.Now;
         FileWindowEnd = DateTime.Now.Add(fileWindowDuration);
-        ProcessEnd = start.Subtract(approvalWindowDuration);
+        ProcessEnd = start.Subtract(headsUpDuration);
         ScheduleStart = start;
         
         OnTimelineCaptured();

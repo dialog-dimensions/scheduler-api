@@ -84,11 +84,11 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
     private void CaptureProcessTimeline(DateTime start)
     {
         var fileWindowDuration = Desk.ProcessParameters.FileWindowDuration;
-        var approvalWindowDuration = Desk.ProcessParameters.ApprovalWindowDuration;
+        var headsUpDuration = Desk.ProcessParameters.HeadsUpDuration;
         
         ProcessStart = DateTime.Now;
         FileWindowEnd = DateTime.Now.Add(fileWindowDuration);
-        ProcessEnd = start.Subtract(approvalWindowDuration);
+        ProcessEnd = start.Subtract(headsUpDuration);
         ScheduleStart = start;
         
         OnTimelineCaptured();
