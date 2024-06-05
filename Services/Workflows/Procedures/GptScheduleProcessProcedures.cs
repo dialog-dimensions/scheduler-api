@@ -1,7 +1,7 @@
 ﻿using Hangfire;
 using Microsoft.AspNetCore.Identity;
 using SchedulerApi.DAL.Repositories.Interfaces;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
+using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Jobs.Classes;

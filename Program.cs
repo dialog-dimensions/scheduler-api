@@ -30,7 +30,9 @@ using SchedulerApi.Services.ScheduleEngine;
 using SchedulerApi.Services.ScheduleEngine.Comparers;
 using SchedulerApi.Services.ScheduleEngine.Comparers.Interfaces;
 using SchedulerApi.Services.ScheduleEngine.Interfaces;
-using SchedulerApi.Services.Storage;
+using SchedulerApi.Services.Storage.BlobStorageServices;
+using SchedulerApi.Services.Storage.HtmlStorageServices;
+using SchedulerApi.Services.Storage.ImageStorageServices;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using SchedulerApi.Services.Workflows.Procedures;
 using SchedulerApi.Services.Workflows.Processes.Classes;
@@ -102,13 +104,15 @@ builder.Services.AddCors(options =>
 });
 
 Console.WriteLine("Adding Blob Storage Services.");
-// Blob Storage Service
+// Blob Storage Services
 var blobServiceConnectionString = builder.Configuration["ConnectionStrings:AzureBlobStorage"]!;
 Console.WriteLine($"blobServiceConnectionString: {blobServiceConnectionString}");
 
 var blobServiceClient = new BlobServiceClient(blobServiceConnectionString);
 builder.Services.AddSingleton(blobServiceClient);
 builder.Services.AddTransient<IBlobStorageServices, BlobStorageServices>();
+builder.Services.AddTransient<IHtmlStorageServices, HtmlStorageServices>();
+builder.Services.AddTransient<IImageStorageServices, ImageStorageServices>();
 
 Console.WriteLine("Adding Schedule Image Services.");
 // Schedule Image Services

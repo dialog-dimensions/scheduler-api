@@ -4,7 +4,7 @@ using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Organization;
-using SchedulerApi.Services.ImageGenerationServices.ScheduleToImageStorage;
+using SchedulerApi.Services.Storage.ImageStorageServices;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Studio.V1.Flow;
@@ -100,7 +100,7 @@ public class TwilioServices : ITwilioServices
     public async Task TriggerPublishShiftsMediaFlow(string phoneNumber, string userName, Schedule schedule, Employee employee)
     {
         var deskName = schedule.Desk.Name;
-        var blobName = IScheduleImageService.GetBlobName(schedule, employee);
+        var blobName = IImageStorageServices.GetBlobName(schedule, employee);
 
         var parameters = new Dictionary<string, object>
         {
