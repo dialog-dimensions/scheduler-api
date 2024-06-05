@@ -54,8 +54,8 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
         
         // Condition Met, Initialize Process
         var newStartDateTime = latestSchedule.EndDateTime;
-        var newEndDateTime = newStartDateTime.AddDays(_params.GetValue<double>("Schedule:Dur:Default"));
-        var newShiftDuration = _params.GetValue<int>("Shift:Dur:Default");
+        var newEndDateTime = newStartDateTime.Add(latestSchedule.Duration);
+        var newShiftDuration = latestSchedule.ShiftDuration;
         var newDeskId = latestSchedule.DeskId;
         
         var process = _serviceProvider.GetRequiredService<IGptScheduleProcess>();

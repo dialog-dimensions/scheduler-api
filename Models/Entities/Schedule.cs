@@ -13,8 +13,8 @@ public class Schedule : List<Shift>, IKeyProvider
     public object Key => new {DeskId, StartDateTime};
     public bool IsFullyScheduled => this.All(shift => shift.EmployeeId is > 0);
     
-    private Shift FirstShift => this.MinBy(s => s.StartDateTime)!;
-    private Shift LastShift => this.MaxBy(s => s.StartDateTime)!;
+    public Shift FirstShift => this.MinBy(s => s.StartDateTime)!;
+    public Shift LastShift => this.MaxBy(s => s.StartDateTime)!;
     private Shift SomeShift => this[0];
-    private TimeSpan Duration => EndDateTime.Subtract(StartDateTime);
+    public TimeSpan Duration => EndDateTime.Subtract(StartDateTime);
 }
