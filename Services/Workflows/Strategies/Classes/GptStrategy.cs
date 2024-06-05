@@ -92,10 +92,13 @@ public sealed class GptStrategy : Strategy, IGptStrategy
 
     private void CaptureProcessTimeline(DateTime start)
     {
-        ScheduleStart = start;
+        var fileWindowDuration = Desk.ProcessParameters.FileWindowDuration;
+        var approvalWindowDuration = Desk.ProcessParameters.ApprovalWindowDuration;
+        
         ProcessStart = DateTime.Now;
-        FileWindowEnd = DateTime.Now.AddHours(_params.GetValue<double>("FileWindowDurHrs"));
-        ProcessEnd = start.AddHours(-_params.GetValue<double>("HeadsUpDurHrs"));
+        FileWindowEnd = DateTime.Now.Add(fileWindowDuration);
+        ProcessEnd = start.Subtract(approvalWindowDuration);
+        ScheduleStart = start;
         
         OnTimelineCaptured();
     }

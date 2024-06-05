@@ -10,12 +10,19 @@ public class DeskDto : IDto<Desk, DeskDto>
     public UnitDto Unit { get; set; }
     public bool Active { get; set; }
 
+    public string CatchRangeString { get; set; }
+    public string FileWindowDurationString { get; set; }
+    public string HeadsUpDurationString { get; set; }
+
     public static DeskDto FromEntity(Desk entity) => new()
     {
         Id = entity.Id,
         Name = entity.Name,
         Unit = UnitDto.FromEntity(entity.Unit),
-        Active = entity.Active
+        Active = entity.Active,
+        CatchRangeString = entity.ProcessParameters.CatchRangeString,
+        FileWindowDurationString = entity.ProcessParameters.FileWindowDurationString,
+        HeadsUpDurationString = entity.ProcessParameters.HeadsUpDurationString
     };
 
     public Desk ToEntity() => new()
@@ -23,6 +30,12 @@ public class DeskDto : IDto<Desk, DeskDto>
         Id = Id,
         Name = Name,
         Unit = Unit.ToEntity(),
-        Active = Active
+        Active = Active,
+        ProcessParameters = new ProcessParameters
+        {
+            CatchRange = TimeSpan.Parse(CatchRangeString),
+            FileWindowDuration = TimeSpan.Parse(FileWindowDurationString),
+            HeadsUpDuration = TimeSpan.Parse(HeadsUpDurationString)
+        }
     };
 }

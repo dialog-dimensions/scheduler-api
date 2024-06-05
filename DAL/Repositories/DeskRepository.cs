@@ -187,4 +187,33 @@ public class DeskRepository : Repository<Desk>, IDeskRepository
         Context.DeskAssignments.RemoveRange(assignments);
         await Context.SaveChangesAsync();
     }
+
+    public async Task UpdateProcessParametersAsync(string deskId, string catchRangeString, string fileWindowDurationString,
+        string headsUpDurationString)
+    {
+        var desk = await ReadAsync(deskId);
+        if (desk is null)
+        {
+            return;
+        }
+        
+        var newProcessParameters = new ProcessParameters
+        {
+            CatchRange = TimeSpan.Parse(catchRangeString),
+            FileWindowDuration = TimeSpan.Parse(fileWindowDurationString),
+            HeadsUpDuration = TimeSpan.Parse(headsUpDurationString)
+        };
+
+        await UpdateProcessParametersAsync(desk, newProcessParameters);
+    }
+    
+    private async Task UpdateProcessParametersAsync(Desk desk, ProcessParameters processParameters)
+    {
+        desk.ProcessParameters = processParameters;
+        Context.Desks.Update(desk);
+        await Context.SaveChangesAsync();
+    }
+    
+    
+    
 }

@@ -147,6 +147,19 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .HasMany<SchedulerGptSession>()
             .WithOne(session => session.Employee)
             .HasForeignKey(session => session.EmployeeId);
+
+        modelBuilder.Entity<Desk>().OwnsOne(
+            d => d.ProcessParameters,
+            a =>
+            {
+                a.Property(p => p.CatchRangeString).HasDefaultValue("4.00:00:00");
+                a.Property(p => p.FileWindowDurationString).HasDefaultValue("1.00:00:00");
+                a.Property(p => p.HeadsUpDurationString).HasDefaultValue("2.12:00:00");
+                
+                a.Property(p => p.CatchRangeString).HasColumnName("CatchRange");
+                a.Property(p => p.FileWindowDurationString).HasColumnName("FileWindowDuration");
+                a.Property(p => p.HeadsUpDurationString).HasColumnName("HeadsUpDuration");
+            });
         
         //Custom Indexes
         modelBuilder.Entity<Employee>()

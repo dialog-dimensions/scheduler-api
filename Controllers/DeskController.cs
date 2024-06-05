@@ -126,4 +126,21 @@ public class DeskController : Controller
         var employees = await _repository.GetDeskEmployees(deskId);
         return employees.Select(emp => EmployeeDto.FromEntity(emp)).ToList();
     }
+
+    [HttpPatch("process-parameters/{deskId}")]
+    [Authorize]
+    public async Task<IActionResult> PatchDeskProcessParameters(string deskId, string catchRangeString,
+        string fileWindowDurationString, string headsUpDurationString)
+    {
+        try
+        {
+            await _repository.UpdateProcessParametersAsync(deskId, catchRangeString, fileWindowDurationString,
+                headsUpDurationString);
+            return Ok();
+        }
+        catch
+        {
+            return Problem();
+        }
+    }
 }

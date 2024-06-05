@@ -18,4 +18,6 @@ public interface IDeskRepository : IRepository<Desk>
 
     Task RemoveDeskAssignments(Desk desk);
     Task RemoveEmployeeAssignments(Employee employee);
+    Task UpdateProcessParametersAsync(string deskId, string catchRangeString, string fileWindowDurationString,
+        string headsUpDurationString);
 }

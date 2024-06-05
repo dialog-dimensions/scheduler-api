@@ -18,8 +18,8 @@ public class Desk : IKeyProvider
         }
     }
     public string UnitId { get; private set; }
-
     public bool Active { get; set; }
-
     public object Key => Id;
+
+    public ProcessParameters ProcessParameters { get; set; }
 }
