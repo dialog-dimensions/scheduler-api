@@ -44,9 +44,9 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
         }
         
         // Check Condition
-        var catchRangeHrs = JobParams.GetValue<double>("CatchRangeHrs");
-        var timeFromEndHrs = latestSchedule.EndDateTime.Subtract(DateTime.Now).TotalHours;
-        var conditionMet = timeFromEndHrs <= catchRangeHrs;
+        var catchRange = latestSchedule.Desk.ProcessParameters.CatchRange;
+        var timeFromEnd = latestSchedule.EndDateTime.Subtract(DateTime.Now);
+        var conditionMet = timeFromEnd <= catchRange;
         if (!conditionMet)
         {
             return;
