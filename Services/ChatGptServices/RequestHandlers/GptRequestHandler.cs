@@ -130,7 +130,15 @@ public class GptRequestHandler : IGptRequestHandler
         {
             var deskId = (string)arg["DeskId"];
             var startDateTime = (DateTime)arg["StartDateTime"];
+            
+            var schedule = await _scheduleRepository.ReadAsync((deskId, startDateTime));
+            if (schedule is null)
+            {
+                return NotFoundGptResponse("DeskID and StartDateTime", (deskId, startDateTime), typeof(Schedule));
+            }
+            
             var scheduleData = await _scheduleRepository.GetScheduleData(deskId, startDateTime);
+            scheduleData.Schedule = schedule;
             
             return new EntityGptResponse<ScheduleData, ScheduleDataDto>
             {

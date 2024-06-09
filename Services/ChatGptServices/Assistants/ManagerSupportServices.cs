@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Enums;
+using SchedulerApi.Models.ChatGPT;
 using SchedulerApi.Models.ChatGPT.Responses;
 using SchedulerApi.Models.ChatGPT.Responses.BaseClasses;
 using SchedulerApi.Models.ChatGPT.Sessions;
@@ -43,6 +44,12 @@ public class ManagerSupportServices : IManagerSupportServices
 
     public async Task ProcessIncomingMessage(Employee manager, string incomingMessage)
     {
+        var session = await ReadOrCreateSession(manager);
+        await SendRunProcess(session, incomingMessage, manager);
+    }
+
+    private async Task<ManagerSupportGptSession> ReadOrCreateSession(Employee manager)
+    {
         // Check for existing open session with the manager
         var session = await _sessionRepository.FindByManagerIdAsync(manager.Id);
 
@@ -65,18 +72,50 @@ public class ManagerSupportServices : IManagerSupportServices
             await _sessionRepository.CreateAsync(session);
         }
 
-        // Add message to the thread
-        await _chatGptClient.AddMessageToThreadAsync(session.ThreadId, incomingMessage);
+        // Return the session
+        return session;
+    }
 
+    private async Task SendRunProcess(ManagerSupportGptSession session, string message, Employee manager)
+    {
+        // Add message to the thread
+        await _chatGptClient.AddMessageToThreadAsync(session.ThreadId, message);
+
+        // Run and process
+        await RunAndProcess(session, manager);
+    }
+
+    private async Task RunAndProcess(ManagerSupportGptSession session, Employee manager)
+    {
         // Run the thread
         await _chatGptClient.RunThreadAsync(session.ThreadId, session.CurrentAssistantId);
-        await Task.Delay(10000);
 
-        // Get GPT response
-        var latestMessage = await _chatGptClient.ReadLatestMessageAsync(session.ThreadId);
+        // Sample GPT response every 5 seconds for 10 tries
+        Message? latestMessage = null;
+        for (var t = 0; t < 10; t++)
+        {
+            await Task.Delay(5000);
+            try
+            {
+                latestMessage = await _chatGptClient.ReadLatestMessageAsync(session.ThreadId);
+                break;
+            }
+            catch
+            {
+                continue;
+            }
+        }
 
+        // Unable to get response from GPT within a minute
+        if (latestMessage is null)
+        {
+            await SendManagerAMessage(manager,
+                "Couldn't get a response from the assistant. Please try again later or contact the system administrator.");
+            return;
+        }
+        
         // Identify request triggers
-        while (latestMessage.Content.Contains(RequestStartFlag))
+        if (latestMessage.Content.Contains(RequestStartFlag))
         {
             // Send user any text generated prior to the request trigger
             var priorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RequestStartFlag);
@@ -90,16 +129,11 @@ public class ManagerSupportServices : IManagerSupportServices
             
             // Serialize response
             var responseSerialization = JsonConvert.SerializeObject(response);
-    
-            // Send response back to the GPT
-            await _chatGptClient.AddMessageToThreadAsync(session.ThreadId, responseSerialization);
 
-            // Run the GPT again
-            await _chatGptClient.RunThreadAsync(session.ThreadId, session.CurrentAssistantId);
-            await Task.Delay(10000);
+            // Send the message, run the thread and process the outcome.
+            await SendRunProcess(session, responseSerialization, manager);
 
-            // Refresh latest message
-            latestMessage = await _chatGptClient.ReadLatestMessageAsync(session.ThreadId);
+            return;
         }
 
         // Identify route triggers
@@ -138,11 +172,9 @@ public class ManagerSupportServices : IManagerSupportServices
             await _sessionRepository.UpdateAsync(session);
             
             // Run GPT again
-            await _chatGptClient.RunThreadAsync(session.ThreadId, session.CurrentAssistantId);
-            await Task.Delay(10000);
-            
-            // Refresh latest message
-            latestMessage = await _chatGptClient.ReadLatestMessageAsync(session.ThreadId);
+            await RunAndProcess(session, manager);
+
+            return;
         }
         
         // Send latest message back to the manager

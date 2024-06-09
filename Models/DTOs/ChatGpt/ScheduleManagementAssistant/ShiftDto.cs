@@ -12,12 +12,18 @@ public class ShiftDto : IDto<Shift, ShiftDto>
     public DateTime ModificationDateTime { get; set; }
     public string ModificationUser { get; set; }
     public string DeskId { get; set; }
-    
 
-    public static ShiftDto FromEntity(Shift entity)
+
+    public static ShiftDto FromEntity(Shift entity) => new()
     {
-        throw new NotImplementedException();
-    }
+        StartDateTime = entity.StartDateTime,
+        EndDateTime = entity.EndDateTime,
+        ScheduleStartDateTime = entity.ScheduleStartDateTime,
+        EmployeeId = entity.EmployeeId,
+        ModificationDateTime = entity.ModificationDateTime,
+        ModificationUser = entity.ModificationUser.ToString(),
+        DeskId = entity.DeskId
+    };
 
     public Shift ToEntity()
     {
