@@ -29,6 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Folder Include="Models\ChatGPT\Requests\ScheduleRequests\" />
       <Folder Include="Models\DTOs\DataStructures\Tree\" />
     </ItemGroup>
 

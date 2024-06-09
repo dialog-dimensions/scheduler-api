@@ -133,6 +133,11 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
             .Where(e => e.UnitId == unitId)
             .ToListAsync();
 
+    public async Task<IEnumerable<Employee>> FindByNameAndUnitId(string name, string unitId)
+    {
+        return await Context.Employees.Where(emp => emp.Name == name && emp.UnitId == unitId).ToListAsync();
+    }
+
     public override async Task UpdateAsync(Employee employee)
     {
         Context.Entry(employee).State = EntityState.Modified;

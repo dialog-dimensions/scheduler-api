@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.DTOs;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 using Twilio.AspNet.Common;
 
@@ -20,7 +20,8 @@ public class TwilioController : Controller
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IDeskRepository _deskRepository;
     private readonly ISchedulerGptSessionRepository _gptSessionRepository;
-    private readonly ISchedulerGptServices _gptServices;
+    private readonly IGathererServices _gptGathererServices;
+    private readonly IManagerSupportServices _managerSupport;
 
     public TwilioController(
         ITwilioServices twilioServices, 
@@ -29,7 +30,7 @@ public class TwilioController : Controller
         IScheduleRepository scheduleRepository, 
         IDeskRepository deskRepository,
         ISchedulerGptSessionRepository gptSessionRepository,
-        ISchedulerGptServices gptServices)
+        IGathererServices gptServices, IManagerSupportServices managerSupport)
     {
         _twilioServices = twilioServices;
         _employeeRepository = employeeRepository;
@@ -37,7 +38,8 @@ public class TwilioController : Controller
         _scheduleRepository = scheduleRepository;
         _deskRepository = deskRepository;
         _gptSessionRepository = gptSessionRepository;
-        _gptServices = gptServices;
+        _gptGathererServices = gptServices;
+        _managerSupport = managerSupport;
     }
     
     // [HttpPost("{phoneNumber}")]
@@ -154,14 +156,24 @@ public class TwilioController : Controller
             return NotFound("employee not found");
         }
 
-        var session = await _gptSessionRepository.FindActiveByEmployeeIdAsync(employee.Id);
-        if (session is null)
+        if (employee.Role == "Employee")
         {
-            return NotFound("no session for employee.");
+            var session = await _gptSessionRepository.FindActiveByEmployeeIdAsync(employee.Id);
+            if (session is null)
+            {
+                return NotFound("no session for employee.");
+            }
+
+            await _gptGathererServices.ProcessIncomingMessage(session.ThreadId, twilioMessage.Body);
+            return Ok();
+        }
+        
+        else if (employee.Role == "Manager")
+        {
+            await _managerSupport.ProcessIncomingMessage(employee, twilioMessage.Body);
         }
 
-        await _gptServices.ProcessIncomingMessage(session.ThreadId, twilioMessage.Body);
-        return Ok();
+        return NoContent();
     }
 
     [HttpPost("publish-media")]

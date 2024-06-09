@@ -1,8 +1,9 @@
 ﻿using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Models.Interfaces;
 
 namespace SchedulerApi.Models.Organization;
 
-public class DeskAssignment
+public class DeskAssignment : IKeyProvider
 {
     private Desk _desk;
     public Desk Desk
@@ -27,4 +28,6 @@ public class DeskAssignment
         }
     }
     public int EmployeeId { get; private set; }
+
+    public object Key => new { DeskId, EmployeeId };
 }

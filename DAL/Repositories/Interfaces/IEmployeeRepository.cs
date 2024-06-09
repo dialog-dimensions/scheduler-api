@@ -13,4 +13,6 @@ public interface IEmployeeRepository : IRepository<Employee>
     Task IncrementRegularBalance(int employeeId, double increment);
     Task IncrementDifficultBalance(int employeeId, double increment);
     Task<IEnumerable<Employee>> GetUnitManagers(string unitId);
+
+    Task<IEnumerable<Employee>> FindByNameAndUnitId(string name, string unitId);
 }
