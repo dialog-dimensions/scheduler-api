@@ -3,7 +3,7 @@ using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
 using SchedulerApi.Models.Organization;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
 using SchedulerApi.Services.Workflows.Jobs.Classes;
 using SchedulerApi.Services.Workflows.Strategies.Interfaces;
 
@@ -18,7 +18,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
     // private readonly IScheduler _scheduler;
     // private readonly UserManager<IdentityUser> _userManager;
     // private readonly ITwilioServices _twilio;
-    private readonly ISchedulerGptServices _gptServices;
+    private readonly IGathererServices _gptServices;
     // private readonly IScheduleImagePublisher _scheduleImagePublisher;
     // private readonly IConfigurationSection _params;
     // private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
@@ -54,7 +54,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         // IConfiguration configuration,
         IServiceProvider serviceProvider, 
         IDeskRepository deskRepository, 
-        ISchedulerGptServices gptServices, 
+        IGathererServices gptServices, 
         // IScheduleImagePublisher scheduleImagePublisher, 
         IBackgroundJobClient backgroundJobClient) : base(serviceProvider)
     {

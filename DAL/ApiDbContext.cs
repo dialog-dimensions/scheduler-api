@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SchedulerApi.Enums;
 using SchedulerApi.Models.ChatGPT;
+using SchedulerApi.Models.ChatGPT.Sessions;
+using SchedulerApi.Models.ChatGPT.Sessions.BaseClasses;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
@@ -28,7 +30,9 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
     public DbSet<Unit> Units { get; set; }
     public DbSet<Desk> Desks { get; set; }
     public DbSet<DeskAssignment> DeskAssignments { get; set; }
-    public DbSet<SchedulerGptSession> SchedulerGptSessions { get; set; }
+
+    public DbSet<ManagerSupportGptSession> ManagerSupportGptSessions { get; set; }
+    public DbSet<GathererGptSession> SchedulerGptSessions { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -74,9 +78,15 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .ToTable("DeskAssignments")
             .HasKey(da => new { da.DeskId, da.EmployeeId });
 
-        modelBuilder.Entity<SchedulerGptSession>()
-            .ToTable("SchedulerGptSessions")
+        modelBuilder.Entity<GptSession>()
+            .ToTable("GptSessions")
             .HasKey(session => session.ThreadId);
+        
+        modelBuilder.Entity<ManagerSupportGptSession>()
+            .ToTable("ManagerSupportGptSessions");
+
+        modelBuilder.Entity<GathererGptSession>()
+            .ToTable("SchedulerGptSessions");
         
         //Relationships
         modelBuilder.Entity<Shift>()
@@ -144,7 +154,7 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Employee>()
-            .HasMany<SchedulerGptSession>()
+            .HasMany<GptSession>()
             .WithOne(session => session.Employee)
             .HasForeignKey(session => session.EmployeeId);
 
@@ -220,7 +230,15 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
             .Property(swap => swap.Status)
             .HasColumnType("nvarchar(50)");
 
-        modelBuilder.Entity<SchedulerGptSession>()
+        modelBuilder.Entity<GptSession>()
+            .Property(session => session.State)
+            .HasColumnType("nvarchar(50)");
+
+        modelBuilder.Entity<GptSession>()
+            .Property(session => session.Type)
+            .HasColumnType("nvarchar(50)");
+        
+        modelBuilder.Entity<GathererGptSession>()
             .Property(session => session.ConversationState)
             .HasColumnType("nvarchar(50)");
 
@@ -299,8 +317,22 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
                 v => v.ToString(), // Convert enum to string when saving to the database
                 v => (TaskStatus)Enum.Parse(typeof(TaskStatus), v) // Convert string back to enum when reading from the database
             );
+
+        modelBuilder.Entity<GptSession>()
+            .Property(session => session.State)
+            .HasConversion(
+                state => state.ToString(), // Convert enum to string when saving to the database
+                state => (GptSessionState)Enum.Parse(typeof(GptSessionState), state) // Convert string back to enum when reading from the database
+            );
+
+        modelBuilder.Entity<GptSession>()
+            .Property(session => session.Type)
+            .HasConversion(
+                type => type.ToString(),
+                type => (GptSessionType)Enum.Parse(typeof(GptSessionType), type)
+            );
         
-        modelBuilder.Entity<SchedulerGptSession>()
+        modelBuilder.Entity<GathererGptSession>()
             .Property(session => session.ConversationState)
             .HasConversion(
                 state => state.ToString(), // Convert enum to string when saving to the database
@@ -355,8 +387,12 @@ public class ApiDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<ShiftSwap>(entity => entity
             .Property(s => s.ModificationUser)
             .HasDefaultValue(User.Computer));
+
+        modelBuilder.Entity<GptSession>(entity => entity
+            .Property(session => session.State)
+            .HasDefaultValue(GptSessionState.NotCreated));
         
-        modelBuilder.Entity<SchedulerGptSession>(entity => entity
+        modelBuilder.Entity<GathererGptSession>(entity => entity
             .Property(session => session.ConversationState)
             .HasDefaultValue(ShabtzanGptConversationState.NotCreated));
     }

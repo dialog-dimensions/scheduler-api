@@ -1,31 +1,32 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Enums;
-using SchedulerApi.Models.ChatGPT;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Models.ChatGPT.Sessions;
+using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
+using SchedulerApi.Services.ChatGptServices.Utils;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 
-namespace SchedulerApi.Services.ChatGptClient;
+namespace SchedulerApi.Services.ChatGptServices.Assistants;
 
-public class SchedulerGptServices : ISchedulerGptServices
+public class GathererServices : IGathererServices
 {
     private readonly UserManager<IdentityUser> _userManager;
     private readonly IScheduleRepository _scheduleRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ISchedulerGptSessionRepository _sessionRepository;
     private readonly IShiftExceptionRepository _exceptionRepository;
-    private readonly IAssistantServices _assistantServices;
+    private readonly IChatGptClient _chatGptClient;
     private readonly ITwilioServices _twilioServices;
 
     private string AssistantId { get; set; }
 
-    public SchedulerGptServices(
+    public GathererServices(
         UserManager<IdentityUser> userManager,
         IScheduleRepository scheduleRepository,
         IEmployeeRepository employeeRepository,
         ISchedulerGptSessionRepository sessionRepository,
         IShiftExceptionRepository exceptionRepository,
-        IAssistantServices assistantServices,
+        IChatGptClient chatGptClient,
         ITwilioServices twilioServices,
         IConfiguration configuration
         )
@@ -35,7 +36,7 @@ public class SchedulerGptServices : ISchedulerGptServices
         _employeeRepository = employeeRepository;
         _sessionRepository = sessionRepository;
         _exceptionRepository = exceptionRepository;
-        _assistantServices = assistantServices;
+        _chatGptClient = chatGptClient;
         _twilioServices = twilioServices;
         AssistantId = configuration["ChatGPT:AssistantId"]!;
     }
@@ -62,10 +63,10 @@ public class SchedulerGptServices : ISchedulerGptServices
         }
         
         // Create GPT Thread
-        var threadId = await _assistantServices.CreateThreadAsync();
+        var threadId = await _chatGptClient.CreateThreadAsync();
         
         // Save A New Session to the Database
-        await _sessionRepository.CreateAsync(new SchedulerGptSession
+        await _sessionRepository.CreateAsync(new GathererGptSession
         {
             ThreadId = threadId,
             Schedule = schedule,
@@ -74,7 +75,7 @@ public class SchedulerGptServices : ISchedulerGptServices
         });
         
         // Generate the Initial Instructions Message and Process It Without Replying the User
-        var initialInstructionsMessage = SchedulerGptUtils.InitialStringBuilder(schedule, employee, otherInstructions);
+        var initialInstructionsMessage = FuncTools.InitialStringBuilder(schedule, employee, otherInstructions);
         await ProcessIncomingMessage(threadId, initialInstructionsMessage, true);
         
         // Return the New Thread ID
@@ -84,13 +85,13 @@ public class SchedulerGptServices : ISchedulerGptServices
     public async Task ProcessIncomingMessage(string threadId, string incomingMessage, bool initialContact = false)
     {
         // Add Message to the GPT
-        if (!await _assistantServices.AddMessageToThreadAsync(threadId, incomingMessage))
+        if (!await _chatGptClient.AddMessageToThreadAsync(threadId, incomingMessage))
         {
             throw new ApplicationException("error adding message to the thread");
         }
         
         // Run the GPT
-        if (!await _assistantServices.RunThreadAsync(threadId, AssistantId))
+        if (!await _chatGptClient.RunThreadAsync(threadId, AssistantId))
         {
             throw new ApplicationException("error running the thread in the assistant");
         }
@@ -107,7 +108,7 @@ public class SchedulerGptServices : ISchedulerGptServices
         // Analyze New Conversation State According to Outgoing Message
         var newConversationState = initialContact ? 
             ShabtzanGptConversationState.Gathering : 
-            SchedulerGptUtils.AnalyzeConversationState(session.LatestMessage.Content);
+            FuncTools.AnalyzeConversationState(session.LatestMessage.Content);
 
         // If Applicable, Process New State
         if (newConversationState is not null)
@@ -118,7 +119,7 @@ public class SchedulerGptServices : ISchedulerGptServices
             // If Applicable, Process JSON to Extract ShiftException instances and Update DB.
             if (session.ConversationState == ShabtzanGptConversationState.JsonDetected)
             {
-                var exceptions = SchedulerGptUtils.GetShiftExceptions(session.LatestMessage.Content);
+                var exceptions = FuncTools.GetShiftExceptions(session.LatestMessage.Content);
                 await _exceptionRepository.CreateRangeAsync(exceptions);
             }
         }
@@ -159,7 +160,7 @@ public class SchedulerGptServices : ISchedulerGptServices
         }
     }
 
-    private string DetermineReply(SchedulerGptSession session) =>
+    private string DetermineReply(GathererGptSession session) =>
         (session.ConversationState >= ShabtzanGptConversationState.JsonDetected) switch
         {
             true => OutgoingUserMessageWhenJsonDetected(session.LatestMessage.Content),
@@ -168,10 +169,10 @@ public class SchedulerGptServices : ISchedulerGptServices
 
     private string OutgoingUserMessageWhenJsonDetected(string rawMessage)
     {
-        return SchedulerGptUtils.GetSubstringPriorToFlag(
+        return FuncTools.GetSubstringPriorToFlag(
             rawMessage, 
-            rawMessage.Contains(SchedulerGptUtils.EndGatherFlag) ? 
-                SchedulerGptUtils.EndGatherFlag : 
-                SchedulerGptUtils.StartJsonFlag);
+            rawMessage.Contains(FuncTools.EndGatherFlag) ? 
+                FuncTools.EndGatherFlag : 
+                FuncTools.StartJsonFlag);
     }
 }

@@ -1,8 +1,9 @@
 ﻿using SchedulerApi.Models.ChatGPT;
+using SchedulerApi.Models.ChatGPT.Sessions;
 
 namespace SchedulerApi.DAL.Repositories.Interfaces;
 
-public interface ISchedulerGptSessionRepository : IRepository<SchedulerGptSession>
+public interface ISchedulerGptSessionRepository : IRepository<GathererGptSession>
 {
-    Task<SchedulerGptSession?> FindActiveByEmployeeIdAsync(int employeeId);
+    Task<GathererGptSession?> FindActiveByEmployeeIdAsync(int employeeId);
 }

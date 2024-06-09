@@ -4,9 +4,9 @@ using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
 
-namespace SchedulerApi.Services.ChatGptClient;
+namespace SchedulerApi.Services.ChatGptServices.Utils;
 
-public static class SchedulerGptUtils
+public static class FuncTools
 {
     public const string StartGatherFlag = "//START GATHER//";
     public const string EndGatherFlag = "//END GATHER//";
@@ -64,10 +64,12 @@ public static class SchedulerGptUtils
             GetSubstringBetweenEndpoints(
                 message, 
                 StartJsonFlag, 
-                EndJsonFlag
+                EndJsonFlag, 
+                false
             ), 
             "[", 
-            "]"
+            "]", 
+            true
         );
         
         // Deserialize Json String
@@ -86,22 +88,26 @@ public static class SchedulerGptUtils
         }
     }
 
-    private static string GetSubstringBetweenEndpoints(string fullString, string startEndpoint, string endEndpoint)
+    public static string GetSubstringBetweenEndpoints(string fullString, string startEndpoint, string endEndpoint, bool inclusive)
     {
-        var (startIndex, endIndex) = GetSubstringEndpointsIndexes(fullString, startEndpoint, endEndpoint);
-        return fullString.Substring(startIndex, endIndex - startIndex + 1);
+        var (startIndexIncluding, endIndexNotIncluding) = GetSubstringEndpointsIndexes(fullString, startEndpoint, endEndpoint);
+        
+        var startIndex = startIndexIncluding + (inclusive ? 0 : startEndpoint.Length);
+        var endIndex = endIndexNotIncluding + (inclusive ? endEndpoint.Length : 0);
+        
+        return startIndex < endIndex ? fullString.Substring(startIndex, endIndex - startIndex) : "";
     }
 
-    public static (string, string) GetComplementaryToSubstringBetweenEndpoints(string fullString, string startEndPoint,
-        string endEndpoint)
-    {
-        var (startIndex, endIndex) = GetSubstringEndpointsIndexes(fullString, startEndPoint, endEndpoint);
-        
-        return (
-            fullString.Substring(0, startIndex + 1),
-            fullString.Substring(endIndex, fullString.Length - endIndex + 1)
-            );
-    }
+    // public static (string, string) GetComplementaryToSubstringBetweenEndpoints(string fullString, string startEndPoint,
+    //     string endEndpoint)
+    // {
+    //     var (startIndex, endIndex) = GetSubstringEndpointsIndexes(fullString, startEndPoint, endEndpoint);
+    //     
+    //     return (
+    //         fullString.Substring(0, startIndex + 1),
+    //         fullString.Substring(endIndex, fullString.Length - endIndex + 1)
+    //         );
+    // }
 
     public static string GetSubstringPriorToFlag(string message, string flag)
     {

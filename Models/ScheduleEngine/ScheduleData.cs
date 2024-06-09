@@ -1,9 +1,10 @@
 ﻿using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Entities.Workers;
+using SchedulerApi.Models.Interfaces;
 
 namespace SchedulerApi.Models.ScheduleEngine;
 
-public class ScheduleData
+public class ScheduleData : IKeyProvider
 {
     public Schedule Schedule { get; set; }
     public IEnumerable<Employee> Employees { get; set; }
@@ -27,4 +28,6 @@ public class ScheduleData
                 ex.DeskId == deskId && 
                 ex.ShiftStartDateTime == shiftStartDateTime
                 );
+
+    public object Key => new { Schedule.DeskId, Schedule.StartDateTime };
 }

@@ -20,8 +20,11 @@ using SchedulerApi.DAL.Repositories;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
 using SchedulerApi.Services.ApiFlashClient;
-using SchedulerApi.Services.ChatGptClient;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Services.ChatGptServices;
+using SchedulerApi.Services.ChatGptServices.Assistants;
+using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
+using SchedulerApi.Services.ChatGptServices.RequestHandlers;
+using SchedulerApi.Services.ChatGptServices.RequestParser;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleHtmlServices;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.JWT;
@@ -181,9 +184,13 @@ builder.Services.AddOpenAIService(settings =>
     settings.ApiKey = chatGptApiKey;
     settings.UseBeta = true;
 });
-builder.Services.AddSingleton<IAssistantServices, AssistantServices>();
-builder.Services.AddScoped<ISchedulerGptServices, SchedulerGptServices>();
+builder.Services.AddSingleton<IChatGptClient, ChatGptClient>();
+builder.Services.AddScoped<IGathererServices, GathererServices>();
+builder.Services.AddScoped<IManagerSupportServices, ManagerSupportServices>();
 builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
+builder.Services.AddScoped<IManagerSupportGptSessionRepository, ManagerSupportGptSessionRepository>();
+builder.Services.AddTransient<IGptRequestParser, GptRequestParser>();
+builder.Services.AddScoped<IGptRequestHandler, GptRequestHandler>();
 
 Console.WriteLine("Adding Repositories.");
 // Entity Model Services

@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.ChatGPT;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
+using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
 
 namespace SchedulerApi.Controllers;
 
@@ -10,15 +10,15 @@ namespace SchedulerApi.Controllers;
 [Route("api/[controller]")]
 public class SchedulerGptSessionController : Controller
 {
-    private readonly ISchedulerGptServices _schedulerGptService;
+    private readonly IGathererServices _gathererService;
     private readonly ISchedulerGptSessionRepository _sessionRepository;
 
     public SchedulerGptSessionController(
-        ISchedulerGptServices schedulerGptService, 
+        IGathererServices gathererService, 
         ISchedulerGptSessionRepository sessionRepository
         )
     {
-        _schedulerGptService = schedulerGptService;
+        _gathererService = gathererService;
         _sessionRepository = sessionRepository;
     }
     
@@ -30,7 +30,7 @@ public class SchedulerGptSessionController : Controller
         int employeeId, 
         Dictionary<string, string>? otherInstructions = null)
     {
-        return await _schedulerGptService
+        return await _gathererService
             .CreateSession(
                 (deskId, scheduleStartDateTime),
                 employeeId,

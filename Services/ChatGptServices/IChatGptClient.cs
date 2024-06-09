@@ -1,8 +1,8 @@
 ﻿using SchedulerApi.Models.ChatGPT;
 
-namespace SchedulerApi.Services.ChatGptClient.Interfaces;
+namespace SchedulerApi.Services.ChatGptServices;
 
-public interface IAssistantServices
+public interface IChatGptClient
 {
     Task<string> CreateThreadAsync();
     Task<bool> AddMessageToThreadAsync(string threadId, string message);

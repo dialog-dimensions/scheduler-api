@@ -2,11 +2,10 @@
 using OpenAI.ObjectModels;
 using OpenAI.ObjectModels.RequestModels;
 using SchedulerApi.Models.ChatGPT;
-using SchedulerApi.Services.ChatGptClient.Interfaces;
 
-namespace SchedulerApi.Services.ChatGptClient;
+namespace SchedulerApi.Services.ChatGptServices;
 
-public class AssistantServices(IOpenAIService openAiService) : IAssistantServices
+public class ChatGptClient(IOpenAIService openAiService) : IChatGptClient
 {
     public async Task<string> CreateThreadAsync()
     {
