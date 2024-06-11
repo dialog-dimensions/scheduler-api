@@ -46,4 +46,9 @@ public class ShiftSwapRepository : Repository<ShiftSwap>, IShiftSwapRepository
         Context.Swaps.Remove(entity);
         await Context.SaveChangesAsync();
     }
+
+    public override Task<IEnumerable<ShiftSwap>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        throw new NotImplementedException();
+    }
 }

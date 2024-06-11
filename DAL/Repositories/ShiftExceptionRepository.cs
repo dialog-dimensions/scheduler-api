@@ -81,7 +81,51 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
         Context.Exceptions.Remove(entity);
         await Context.SaveChangesAsync();
     }
-    
+
+    public override async Task<IEnumerable<ShiftException>> Query(Dictionary<string, object> parameters, string prefixDiscriminator="")
+    {
+        var hasShiftStartDateTime = parameters.TryGetValue("ShiftStatDateTime", out var shiftStartDateTimeValue);
+        var hasEmployeeId = parameters.TryGetValue("EmployeeId", out var employeeIdValue);
+        var hasDeskId = parameters.TryGetValue("DeskId", out var deskIdValue);
+
+        if (hasShiftStartDateTime && hasEmployeeId && hasDeskId)
+        {
+            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
+            var employeeId = Convert.ToInt32(employeeIdValue);
+            var deskId = Convert.ToString(deskIdValue);
+
+            var shiftException = await ReadAsync((deskId, shiftStartDateTime, employeeId));
+            if (shiftException is null)
+            {
+                return new ShiftException[] { };
+            }
+
+            return new[] { shiftException };
+        }
+
+        var matches = Context.Exceptions.AsQueryable();
+
+        if (hasShiftStartDateTime)
+        {
+            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
+            matches = matches.Where(ex => ex.ShiftStartDateTime == shiftStartDateTime);
+        }
+
+        if (hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            matches = matches.Where(ex => ex.DeskId == deskId);
+        }
+
+        if (hasEmployeeId)
+        {
+            var employeeId = Convert.ToInt32(employeeIdValue);
+            matches = matches.Where(ex => ex.EmployeeId == employeeId);
+        }
+
+        return await matches.ToListAsync();
+    }
+
     public async Task<IEnumerable<ShiftException>> WhereAsync(string deskId, DateTime shiftStartDateTime)
     {
         var result = await Context.Exceptions

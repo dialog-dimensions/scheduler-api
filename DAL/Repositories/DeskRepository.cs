@@ -60,6 +60,72 @@ public class DeskRepository : Repository<Desk>, IDeskRepository
         await Context.SaveChangesAsync();
     }
 
+    public override async Task<IEnumerable<Desk>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var hasDeskId = parameters.TryGetValue($"{prefixDiscriminator}DeskId", out var deskIdValue);
+        if (hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue)!;
+            var desk = await ReadAsync(deskId);
+            if (desk is null)
+            {
+                return new Desk[] { };
+            }
+
+            return new[] { desk };
+        }
+
+        var matches = Context.Desks.AsQueryable();
+        
+        var hasDeskName = parameters.TryGetValue($"{prefixDiscriminator}DeskName", out var deskNameValue);
+        if (hasDeskName)
+        {
+            var deskName = Convert.ToString(deskNameValue);
+            matches = matches.Where(desk => desk.Name == deskName);
+        }
+
+        var hasUnitId = parameters.TryGetValue($"{prefixDiscriminator}UnitId", out var unitIdValue);
+        if (hasUnitId)
+        {
+            var unitId = Convert.ToString(unitIdValue);
+            matches = matches.Where(desk => desk.UnitId == unitId);
+        }
+
+        var hasDeskActive = parameters.TryGetValue($"{prefixDiscriminator}DeskActive", out var deskActiveValue);
+        if (hasDeskActive)
+        {
+            var deskActive = Convert.ToBoolean(deskActiveValue);
+            matches = matches.Where(desk => desk.Active == deskActive);
+        }
+
+        var hasDeskCatchRange = parameters.TryGetValue($"{prefixDiscriminator}DeskCatchRange", out var deskCatchRangeValue);
+        if (hasDeskCatchRange)
+        {
+            var deskCatchRangeString = Convert.ToString(deskCatchRangeValue);
+            var deskCatchRange = TimeSpan.Parse(deskCatchRangeString!);
+            matches = matches.Where(desk => desk.ProcessParameters.CatchRange == deskCatchRange);
+        }
+
+        var hasDeskFileWindowDuration =
+            parameters.TryGetValue($"{prefixDiscriminator}DeskFileWindowDuration", out var deskFileWindowDurationValue);
+        if (hasDeskFileWindowDuration)
+        {
+            var deskFileWindowDurationString = Convert.ToString(deskFileWindowDurationValue);
+            var deskFileWindowDuration = TimeSpan.Parse(deskFileWindowDurationString!);
+            matches = matches.Where(desk => desk.ProcessParameters.FileWindowDuration == deskFileWindowDuration);
+        }
+
+        var hasDeskHeadsUpDuration = parameters.TryGetValue($"{prefixDiscriminator}DeskHeadsUpDuration", out var deskHeadsUpDurationValue);
+        if (hasDeskHeadsUpDuration)
+        {
+            var deskHeadsUpDurationString = Convert.ToString(deskHeadsUpDurationValue);
+            var deskHeadsUpDuration = TimeSpan.Parse(deskHeadsUpDurationString!);
+            matches = matches.Where(desk => desk.ProcessParameters.HeadsUpDuration == deskHeadsUpDuration);
+        }
+
+        return await matches.ToListAsync();
+    }
+
     public async Task<IEnumerable<Desk>> ReadAllActiveUnit(Unit unit)
     {
         return await Context.Desks

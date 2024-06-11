@@ -76,6 +76,52 @@ public class SchedulerGptSessionRepository : Repository<GathererGptSession>, ISc
         await Context.SaveChangesAsync();
     }
 
+    public override async Task<IEnumerable<GathererGptSession>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var hasThreadId = parameters.TryGetValue("ThreadId", out var threadIdValue);
+        if (hasThreadId)
+        {
+            var threadId = Convert.ToString(threadIdValue);
+            var session = await ReadAsync(threadId!);
+            if (session is null)
+            {
+                return new GathererGptSession[] { };
+            }
+
+            return new[] { session };
+        }
+
+        var matches = Context.SchedulerGptSessions.AsQueryable();
+
+        var hasDeskId = parameters.TryGetValue("DeskId", out var deskIdValue);
+        if (hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            matches = matches.Where(session => session.DeskId == deskId);
+        }
+
+        var hasScheduleStartDateTime =
+            parameters.TryGetValue("ScheduleStartDateTime", out var scheduleStartDateTimeValue);
+        if (hasScheduleStartDateTime)
+        {
+            var scheduleStartDateTime = Convert.ToDateTime(scheduleStartDateTimeValue);
+            matches = matches.Where(s => s.ScheduleStartDateTime == scheduleStartDateTime);
+        }
+
+        var hasSessionConversationState =
+            parameters.TryGetValue("SessionConversationState", out var sessionConversationStateValue);
+        if (hasSessionConversationState)
+        {
+            var sessionConversationStateString = Convert.ToString(sessionConversationStateValue);
+            var sessionConversationState =
+                (ShabtzanGptConversationState)Enum.Parse(typeof(ShabtzanGptConversationState),
+                    sessionConversationStateString!);
+            matches = matches.Where(s => s.ConversationState == sessionConversationState);
+        }
+
+        return await matches.ToListAsync();
+    }
+
     public async Task<GathererGptSession?> FindActiveByEmployeeIdAsync(int employeeId)
     {
         return await Context.SchedulerGptSessions.FirstOrDefaultAsync(

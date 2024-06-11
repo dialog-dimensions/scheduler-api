@@ -15,4 +15,7 @@ public interface IRepository<T> where T : IKeyProvider
     Task DeleteAsync(object key);
 
     Task DeleteAsync(T entity);
+
+    Task<IEnumerable<T>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "");
+    Task<T?> TryFind(Dictionary<string, object> parameters, string prefixDiscriminator = "");
 }

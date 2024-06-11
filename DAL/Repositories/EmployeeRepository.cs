@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SchedulerApi.DAL.Repositories.BaseClasses;
 using SchedulerApi.DAL.Repositories.Interfaces;
+using SchedulerApi.Enums;
 using SchedulerApi.Models.Entities.Workers;
 
 namespace SchedulerApi.DAL.Repositories;
@@ -61,6 +62,77 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
 
         Context.Employees.Remove(entity);
         await Context.SaveChangesAsync();
+    }
+
+    public override async Task<IEnumerable<Employee>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var hasEmployeeId = parameters.TryGetValue("EmployeeId", out var employeeIdValue);
+        if (hasEmployeeId)
+        {
+            var employeeId = Convert.ToInt32(employeeIdValue);
+            var employee = await ReadAsync(employeeId);
+            if (employee is null)
+            {
+                return new Employee[] { };
+            }
+
+            return new[] { employee };
+        }
+
+        var matches = Context.Employees.AsQueryable();
+        
+        var hasEmployeeName = parameters.TryGetValue("EmployeeName", out var employeeNameValue);
+        if (hasEmployeeName)
+        {
+            var employeeName = Convert.ToString(employeeNameValue);
+            matches = matches.Where(emp => emp.Name == employeeName);
+        }
+
+        var hasEmployeeBalance = parameters.TryGetValue("EmployeeBalance", out var employeeBalanceValue);
+        if (hasEmployeeBalance)
+        {
+            var employeeBalance = Convert.ToDouble(employeeBalanceValue);
+            matches = matches.Where(emp => Math.Abs(emp.Balance - employeeBalance) < 0.004);
+        }
+
+        var hasEmployeeDifficultBalance =
+            parameters.TryGetValue("EmployeeDifficultBalance", out var employeeDifficultBalanceValue);
+        if (hasEmployeeDifficultBalance)
+        {
+            var employeeDifficultBalance = Convert.ToDouble(employeeDifficultBalanceValue);
+            matches = matches.Where(emp => Math.Abs(emp.DifficultBalance - employeeDifficultBalance) < 0.004);
+        }
+
+        var hasEmployeeActive = parameters.TryGetValue("EmployeeActive", out var employeeActiveValue);
+        if (hasEmployeeActive)
+        {
+            var employeeActive = Convert.ToBoolean(employeeActiveValue);
+            matches = matches.Where(emp => emp.Active == employeeActive);
+        }
+
+        var hasEmployeeRole = parameters.TryGetValue("EmployeeRole", out var employeeRoleValue);
+        if (hasEmployeeRole)
+        {
+            var employeeRole = Convert.ToString(employeeRoleValue);
+            matches = matches.Where(emp => emp.Role == employeeRole);
+        }
+
+        var hasUnitId = parameters.TryGetValue("UnitId", out var unitIdValue);
+        if (hasUnitId)
+        {
+            var unitId = Convert.ToString(unitIdValue);
+            matches = matches.Where(emp => emp.UnitId == unitId);
+        }
+
+        var hasEmployeeGender = parameters.TryGetValue("EmployeeGender", out var employeeGenderValue);
+        if (hasEmployeeGender)
+        {
+            var employeeGenderString = Convert.ToString(employeeGenderValue);
+            var employeeGender = (Gender)Enum.Parse(typeof(Gender), employeeGenderString!);
+            matches = matches.Where(emp => emp.Gender == employeeGender);
+        }
+
+        return await matches.ToListAsync();
     }
 
     public async Task<IEnumerable<Employee>> ReadAllActiveAsync()

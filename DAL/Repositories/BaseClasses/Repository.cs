@@ -23,4 +23,10 @@ public abstract class Repository<T> : IRepository<T> where T : IKeyProvider
     
     public abstract Task DeleteAsync(object key);
     public abstract Task DeleteAsync(T entity);
+    public abstract Task<IEnumerable<T>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "");
+    public async Task<T?> TryFind(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var matches = (await Query(parameters, prefixDiscriminator)).ToList();
+        return matches.Count == 1 ? matches[0] : default;
+    }
 }

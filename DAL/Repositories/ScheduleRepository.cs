@@ -283,4 +283,42 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
     {
         throw new NotImplementedException();
     }
+
+    public override async Task<IEnumerable<Schedule>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var hasScheduleStartDateTime = parameters.TryGetValue("ScheduleStartDateTime", out var scheduleStartDateTimeValue);
+        var hasDeskId = parameters.TryGetValue("DeskId", out var deskIdValue);
+
+        if (hasDeskId && hasScheduleStartDateTime)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            var scheduleStartDateTime = Convert.ToDateTime(scheduleStartDateTimeValue);
+            var schedule = await ReadAsync((deskId, scheduleStartDateTime));
+            if (schedule is null)
+            {
+                return new Schedule[] { };
+            }
+
+            return new[] { schedule };
+        }
+
+        var matchShifts = Context.Shifts.AsQueryable();
+
+        if (hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            matchShifts = matchShifts.Where(shift => shift.DeskId == deskId);
+        }
+
+        if (hasScheduleStartDateTime)
+        {
+            var scheduleStartDateTime = Convert.ToDateTime(scheduleStartDateTimeValue);
+            matchShifts = matchShifts.Where(shift => shift.ScheduleStartDateTime == scheduleStartDateTime);
+        }
+
+        var shiftGroups = matchShifts
+            .GroupBy(shift => new { shift.DeskId, shift.ScheduleStartDateTime });
+
+        return shiftGroups.Select(group => new ScheduleFactory().FromShifts(group)!);
+    }
 }

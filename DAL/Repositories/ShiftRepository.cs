@@ -53,6 +53,64 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
         throw new NotImplementedException();
     }
 
+    public override async Task<IEnumerable<Shift>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    {
+        var hasShiftStartDateTime = parameters.TryGetValue("ShiftStartDateTime", out var shiftStartDateTimeValue);
+        var hasDeskId = parameters.TryGetValue("DeskId", out var deskIdValue);
+
+        if (hasShiftStartDateTime && hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
+
+            var shift = await ReadAsync((deskId, shiftStartDateTime));
+            if (shift is null)
+            {
+                return new Shift[] { };
+            }
+
+            return new[] { shift };
+        }
+
+        var matches = Context.Shifts.AsQueryable();
+
+        if (hasDeskId)
+        {
+            var deskId = Convert.ToString(deskIdValue);
+            matches = matches.Where(shift => shift.DeskId == deskId);
+        }
+
+        if (hasShiftStartDateTime)
+        {
+            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
+            matches = matches.Where(shift => shift.StartDateTime == shiftStartDateTime);
+        }
+
+        var hasShiftEndDateTime = parameters.TryGetValue("ShiftEndDateTime", out var shiftEndDateTimeValue);
+        if (hasShiftEndDateTime)
+        {
+            var shiftEndDateTime = Convert.ToDateTime(shiftEndDateTimeValue);
+            matches = matches.Where(shift => shift.EndDateTime == shiftEndDateTime);
+        }
+        
+        var hasScheduleStartDateTime =
+            parameters.TryGetValue("ScheduleStartDateTime", out var scheduleStartDateTimeValue);
+        if (hasScheduleStartDateTime)
+        {
+            var scheduleStartDateTime = Convert.ToDateTime(scheduleStartDateTimeValue);
+            matches = matches.Where(shift => shift.ScheduleStartDateTime == scheduleStartDateTime);
+        }
+        
+        var hasEmployeeId = parameters.TryGetValue("EmployeeId", out var employeeIdValue);
+        if (hasEmployeeId)
+        {
+            var employeeId = Convert.ToInt32(employeeIdValue);
+            matches = matches.Where(shift => shift.EmployeeId == employeeId);
+        }
+
+        return await matches.ToListAsync();
+    }
+
     public async Task UpdateShiftEmployeeAsync(string deskId, DateTime shiftStart, Employee employee)
     {
         var shift = await Context.Shifts

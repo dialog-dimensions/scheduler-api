@@ -68,9 +68,51 @@ public class UnitRepository : Repository<Unit>, IUnitRepository
         await Context.SaveChangesAsync();
     }
 
-    public async Task<Unit?> ReadByNameAsync(string name)
+    public override async Task<IEnumerable<Unit>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
     {
-        return await Context.Units.FirstOrDefaultAsync(u => u.Name == name);
+        var hasUnitId = parameters.TryGetValue("UnitId", out var unitIdValue);
+        if (hasUnitId)
+        {
+            var unitId = Convert.ToString(unitIdValue);
+            var unit = await ReadAsync(unitId!);
+            if (unit is null)
+            {
+                return new Unit[] { };
+            }
+
+            return new[] { unit };
+        }
+
+        var matches = Context.Units.AsQueryable();
+        
+        var hasUnitName = parameters.TryGetValue("UnitName", out var unitNameValue);
+        if (hasUnitName)
+        {
+            var unitName = Convert.ToString(unitNameValue);
+            matches = matches.Where(unit => unit.Name == unitName);
+        }
+        
+        var hasParentUnitId = parameters.TryGetValue("ParentUnitName", out var parentUnitIdValue);
+        var hasParentUnitName = parameters.TryGetValue("ParentUnitName", out var parentUnitNameValue);
+        
+        if (hasParentUnitId)
+        {
+            var parentUnitId = Convert.ToString(parentUnitIdValue);
+            matches = matches.Include(unit => unit.ParentUnit).Where(unit => unit.ParentUnit != null && unit.ParentUnitId == parentUnitId);
+        }
+        
+        else if (hasParentUnitName)
+        {
+            var parentUnitName = Convert.ToString(parentUnitNameValue);
+            matches = matches.Include(unit => unit.ParentUnit).Where(unit => unit.ParentUnit != null && unit.ParentUnit.Name == parentUnitName);
+        }
+
+        return await matches.ToListAsync();
+    }
+
+    public async Task<IEnumerable<Unit>> FindByNameAsync(string name)
+    {
+        return await Context.Units.Where(u => u.Name == name).ToListAsync();
     }
 
     public async Task<Organization?> GetUnderlyingOrganizationAsync(string id)
