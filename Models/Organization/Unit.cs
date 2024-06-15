@@ -1,8 +1,8 @@
-﻿using SchedulerApi.Models.Interfaces;
+﻿using SchedulerApi.DAL.Queries;
 
 namespace SchedulerApi.Models.Organization;
 
-public class Unit : IKeyProvider, IEquatable<Unit>
+public class Unit : IMyQueryable, IEquatable<Unit>
 {
     public string Id { get; set; } = "1";
     public string Name { get; set; } = "main";
@@ -40,4 +40,15 @@ public class Unit : IKeyProvider, IEquatable<Unit>
     {
         return Id.GetHashCode();
     }
+
+    public static IEnumerable<string> QueryPropertyNames { get; } = new[] { "UnitId", "UnitName" };
+
+    public Dictionary<string, object?> QueryProperties => new()
+    {
+        { "UnitId", Id },
+        { "UnitName", Name }
+    };
+
+    public Dictionary<string, object?> NavigationPropertyKeys => new();
+    public static Dictionary<string, Type> NavigationPropertyTypes { get; } = new();
 }

@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using OpenAI.Extensions;
 using SchedulerApi;
 using SchedulerApi.DAL;
+using SchedulerApi.DAL.Queries;
 using SchedulerApi.DAL.Repositories;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Entities.Factories;
@@ -191,7 +192,39 @@ builder.Services.AddScoped<IManagerSupportServices, ManagerSupportServices>();
 builder.Services.AddScoped<ISchedulerGptSessionRepository, SchedulerGptSessionRepository>();
 builder.Services.AddScoped<IManagerSupportGptSessionRepository, ManagerSupportGptSessionRepository>();
 builder.Services.AddTransient<IGptRequestParser, GptRequestParser>();
-builder.Services.AddScoped<IGptRequestHandler, GptRequestHandler>();
+builder.Services.AddScoped<ICommandRegistry, CommandRegistry>();
+builder.Services.AddTransient<IRequestDispatcher, RequestDispatcher>();
+
+// Query
+builder.Services.AddScoped<IQueryService, QueryService>();
+
+// ChatGPT Commands
+builder.Services.AddTransient<CreateEmployeeCommand>();
+builder.Services.AddTransient<ReadEmployeeCommand>();
+builder.Services.AddTransient<ReadEmployeesCommand>();
+builder.Services.AddTransient<ReadShiftCommand>();
+builder.Services.AddTransient<ReadShiftsCommand>();
+builder.Services.AddTransient<AssignShiftEmployeeCommand>();
+builder.Services.AddTransient<ReadScheduleCommand>();
+builder.Services.AddTransient<ReadSchedulesCommand>();
+builder.Services.AddTransient<CreateShiftExceptionCommand>();
+builder.Services.AddTransient<ReadShiftExceptionCommand>();
+builder.Services.AddTransient<ReadShiftExceptionsCommand>();
+builder.Services.AddTransient<ReadDeskCommand>();
+builder.Services.AddTransient<ReadDesksCommand>();
+builder.Services.AddTransient<CreateDeskAssignmentCommand>();
+builder.Services.AddTransient<ReadDeskAssignmentCommand>();
+builder.Services.AddTransient<ReadDeskAssignmentsCommand>();
+builder.Services.AddTransient<DeleteDeskAssignmentCommand>();
+builder.Services.AddTransient<ReadUnitCommand>();
+builder.Services.AddTransient<ReadUnitsCommand>();
+builder.Services.AddTransient<ReadAutoProcessCommand>();
+builder.Services.AddTransient<AdvanceAutoProcessCommand>();
+builder.Services.AddTransient<StartGptProcessCommand>();
+builder.Services.AddTransient<PauseAutoProcessCommand>();
+builder.Services.AddTransient<RescheduleAutoProcessNextPhaseCommand>();
+// builder.Services.AddTransient<SwapShiftEmployeesCommand>();
+// builder.Services.AddTransient<ReadAutoProcessesCommand>();
 
 Console.WriteLine("Adding Repositories.");
 // Entity Model Services

@@ -52,17 +52,6 @@ public class ManagerSupportGptSessionRepository : Repository<ManagerSupportGptSe
         await Context.SaveChangesAsync();
     }
 
-    public override async Task<IEnumerable<ManagerSupportGptSession>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
-    {
-        var hasProcessId = parameters.TryGetValue("ProcessId", out var processIdValue);
-        if (hasProcessId)
-        {
-            var processId = Convert.ToInt32(processIdValue);
-            var process = await ReadAsync(processId);
-            if (process is null)
-            {
-                return new ManagerSupportGptSession[] { };
-            }
 
             return new[] { process };
         }

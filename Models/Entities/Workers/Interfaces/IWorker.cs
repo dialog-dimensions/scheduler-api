@@ -1,8 +1,8 @@
-﻿using SchedulerApi.Models.Interfaces;
+﻿using SchedulerApi.DAL.Queries;
 
 namespace SchedulerApi.Models.Entities.Workers.Interfaces;
 
-public interface IWorker : IKeyProvider, IEquatable<IWorker>
+public interface IWorker : IMyQueryable
 {
     int Id { get; set; }
     string Name { get; set; }

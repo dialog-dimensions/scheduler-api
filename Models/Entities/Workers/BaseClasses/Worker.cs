@@ -4,7 +4,7 @@ using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities.Workers.BaseClasses;
 
-public abstract class Worker : IWorker
+public abstract class Worker : IWorker, IEquatable<Worker>
 {
     public object Key => Id;
     public int Id { get; set; }
@@ -27,7 +27,7 @@ public abstract class Worker : IWorker
     
     public string UnitId { get; private set; }
 
-    protected bool Equals(Worker other)
+    public bool Equals(Worker other)
     {
         return Id == other.Id && Name == other.Name;
     }
@@ -49,4 +49,27 @@ public abstract class Worker : IWorker
     {
         return HashCode.Combine(Id, Name);
     }
+
+    public static IEnumerable<string> QueryPropertyNames { get; } = new[]
+    {
+        "EmployeeId", 
+        "EmployeeName", 
+        "EmployeeGender", 
+        "EmployeeRole"
+    };
+    public static Dictionary<string, Type> NavigationPropertyTypes { get; } = new() 
+    { 
+        { "Unit", typeof(Unit) }
+    };
+    public Dictionary<string, object?> QueryProperties => new()
+    {
+        { "EmployeeId", Id },
+        { "EmployeeName", Name },
+        { "EmployeeGender", Gender },
+        { "EmployeeRole", Role }
+    };
+    public Dictionary<string, object?> NavigationPropertyKeys => new()
+    {
+        { "Unit", UnitId },
+    };
 }

@@ -1,11 +1,12 @@
-﻿using SchedulerApi.Models.Entities.Enums;
+﻿using SchedulerApi.DAL.Queries;
+using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Interfaces;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities;
 
-public class Shift : IKeyProvider
+public class Shift : IMyQueryable
 {
     
     public DateTime StartDateTime { get; set; }
@@ -59,4 +60,31 @@ public class Shift : IKeyProvider
         Employee = Employee,
         EmployeeId = EmployeeId,
     };
+
+
+    public static IEnumerable<string> QueryPropertyNames { get; } = new[]
+        { "ShiftStartDateTime", "ShiftEndDateTime", "ShiftIsWeekend", "ShiftIsDifficult" };
+
+    public Dictionary<string, object?> QueryProperties => new()
+    {
+        { "ShiftStartDateTime", StartDateTime },
+        { "ShiftEndDateTime", EndDateTime },
+        { "ShiftIsWeekend", IsWeekend },
+        { "ShiftIsDifficult", IsDifficult }
+    };
+
+    public Dictionary<string, object?> NavigationPropertyKeys => new()
+    {
+        { "Desk", DeskId },
+        { "Schedule", (DeskId, ScheduleStartDateTime) }
+    };
+
+    public static Dictionary<string, Type> NavigationPropertyTypes { get; } = new()
+    {
+        { "Desk", typeof(Desk) },
+        { "Schedule", typeof(Schedule) },
+        { "Employee", typeof(Employee) }
+    };
+    
+    
 }

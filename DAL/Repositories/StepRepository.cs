@@ -46,10 +46,6 @@ public class StepRepository : Repository<Step>, IRepository<Step>
         await Context.SaveChangesAsync();
     }
 
-    public override Task<IEnumerable<Step>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
-    {
-        throw new NotImplementedException();
-    }
 
     public override async Task UpdateAsync(Step entity)
     {

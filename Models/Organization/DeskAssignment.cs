@@ -1,9 +1,10 @@
-﻿using SchedulerApi.Models.Entities.Workers;
+﻿using SchedulerApi.DAL.Queries;
+using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Interfaces;
 
 namespace SchedulerApi.Models.Organization;
 
-public class DeskAssignment : IKeyProvider
+public class DeskAssignment : IMyQueryable
 {
     private Desk _desk;
     public Desk Desk
@@ -30,4 +31,19 @@ public class DeskAssignment : IKeyProvider
     public int EmployeeId { get; private set; }
 
     public object Key => new { DeskId, EmployeeId };
+
+    public static IEnumerable<string> QueryPropertyNames { get; } = new string[] { };
+    public Dictionary<string, object?> QueryProperties => new();
+
+    public Dictionary<string, object?> NavigationPropertyKeys => new()
+    {
+        { "Desk", DeskId },
+        { "Employee", EmployeeId }
+    };
+
+    public static Dictionary<string, Type> NavigationPropertyTypes { get; } = new()
+    {
+        { "Desk", typeof(Desk) },
+        { "Employee", typeof(Employee) }
+    };
 }

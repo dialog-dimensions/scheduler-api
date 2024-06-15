@@ -130,4 +130,29 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         
         return id;
     }
+
+
+    public static IEnumerable<string> QueryPropertyNames { get; } = new[]
+    {
+        "ProcessStartDateTime",
+        "ProcessFileWindowEndDateTime",
+        "ProcessPublishDateTime"
+    };
+
+    public static Dictionary<string, Type> NavigationPropertyTypes { get; } = new()
+    {
+        { "Schedule", typeof(Schedule) }
+    };
+
+    public Dictionary<string, object?> QueryProperties => new()
+    {
+        { "ProcessStartDateTime", ProcessStart },
+        { "ProcessFileWindowEndDateTime", FileWindowEnd },
+        { "ProcessPublishDateTime", PublishDateTime }
+    };
+
+    public Dictionary<string, object?> NavigationPropertyKeys => new()
+    {
+        { "Schedule", (DeskId, ScheduleStart) }
+    };
 }

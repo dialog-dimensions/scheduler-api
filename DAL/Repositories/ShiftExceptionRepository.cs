@@ -82,26 +82,6 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
         await Context.SaveChangesAsync();
     }
 
-    public override async Task<IEnumerable<ShiftException>> Query(Dictionary<string, object> parameters, string prefixDiscriminator="")
-    {
-        var hasShiftStartDateTime = parameters.TryGetValue("ShiftStatDateTime", out var shiftStartDateTimeValue);
-        var hasEmployeeId = parameters.TryGetValue("EmployeeId", out var employeeIdValue);
-        var hasDeskId = parameters.TryGetValue("DeskId", out var deskIdValue);
-
-        if (hasShiftStartDateTime && hasEmployeeId && hasDeskId)
-        {
-            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
-            var employeeId = Convert.ToInt32(employeeIdValue);
-            var deskId = Convert.ToString(deskIdValue);
-
-            var shiftException = await ReadAsync((deskId, shiftStartDateTime, employeeId));
-            if (shiftException is null)
-            {
-                return new ShiftException[] { };
-            }
-
-            return new[] { shiftException };
-        }
 
         var matches = Context.Exceptions.AsQueryable();
 

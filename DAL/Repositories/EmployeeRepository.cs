@@ -64,20 +64,6 @@ public class EmployeeRepository : Repository<Employee>, IEmployeeRepository
         await Context.SaveChangesAsync();
     }
 
-    public override async Task<IEnumerable<Employee>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "")
-    {
-        var hasEmployeeId = parameters.TryGetValue("EmployeeId", out var employeeIdValue);
-        if (hasEmployeeId)
-        {
-            var employeeId = Convert.ToInt32(employeeIdValue);
-            var employee = await ReadAsync(employeeId);
-            if (employee is null)
-            {
-                return new Employee[] { };
-            }
-
-            return new[] { employee };
-        }
 
         var matches = Context.Employees.AsQueryable();
         

@@ -8,7 +8,13 @@ public class Employee : Worker
     {
         Role = "Employee";
     }
-    
+
+    public new IEnumerable<string> QueryPropertyNames { get; } =
+        Worker.QueryPropertyNames.Concat(new[] { "EmployeeBalance", "EmployeeDifficultBalance", "EmployeeActive" });
+
+    public new Dictionary<string, object?> QueryProperties =>
+        base.QueryProperties.Concat(new Dictionary<string, object?>()).ToDictionary();
+
     public double Balance { get; set; }
     public double DifficultBalance { get; set; }
     public bool Active { get; set; } = true;
