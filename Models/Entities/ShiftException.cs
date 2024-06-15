@@ -1,7 +1,6 @@
 ﻿using SchedulerApi.DAL.Queries;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
-using SchedulerApi.Models.Interfaces;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities;
@@ -22,7 +21,18 @@ public class ShiftException : IMyQueryable
     public string DeskId { get; set; }
     
     public DateTime ShiftStartDateTime { get; set; }
-    public Shift Shift { get; set; }
+
+    private Shift _shift;
+
+    public Shift Shift
+    {
+        get => _shift;
+        set
+        {
+            _shift = value;
+            Desk = value.Desk;
+        }
+    }
 
     public int EmployeeId { get; set; }
     public Employee Employee { get; set; }
