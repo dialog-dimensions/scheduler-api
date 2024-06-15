@@ -1,7 +1,6 @@
 ﻿using SchedulerApi.DAL.Queries;
 using SchedulerApi.Models.Entities.Enums;
 using SchedulerApi.Models.Entities.Workers;
-using SchedulerApi.Models.Interfaces;
 using SchedulerApi.Models.Organization;
 
 namespace SchedulerApi.Models.Entities;

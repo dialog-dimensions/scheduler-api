@@ -1,6 +1,5 @@
 ﻿using SchedulerApi.DAL.Queries;
 using SchedulerApi.Models.Entities.Workers;
-using SchedulerApi.Models.Interfaces;
 
 namespace SchedulerApi.Models.Organization;
 

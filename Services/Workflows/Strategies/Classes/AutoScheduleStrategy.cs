@@ -19,7 +19,6 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
     private readonly IScheduler _scheduler;
     private readonly UserManager<IdentityUser> _userManager;
     private readonly ITwilioServices _twilio;
-    private readonly IConfigurationSection _params;
     private readonly TimeSpan _messageBufferTime = TimeSpan.FromSeconds(5);
     private readonly IBackgroundJobClient _backgroundJobClient;
 
@@ -62,8 +61,6 @@ public sealed class AutoScheduleStrategy : Strategy, IAutoScheduleStrategy
         _userManager = userManager;
         _twilio = twilio;
         _backgroundJobClient = backgroundJobClient;
-
-        _params = configuration.GetSection("Params:Processes:AutoSchedule");
         
         Construct();
     }

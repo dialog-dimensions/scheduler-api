@@ -1,5 +1,6 @@
 ﻿using SchedulerApi.CustomEventArgs;
 using SchedulerApi.DAL.Repositories.Interfaces;
+using SchedulerApi.Models.Entities;
 using SchedulerApi.Models.Organization;
 using SchedulerApi.Services.Workflows.Processes.Interfaces;
 using SchedulerApi.Services.Workflows.Strategies;
