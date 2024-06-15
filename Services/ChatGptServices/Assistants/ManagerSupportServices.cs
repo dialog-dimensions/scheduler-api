@@ -19,9 +19,9 @@ public class ManagerSupportServices : IManagerSupportServices
 {
     private const string RequestStartFlag = "//REQUEST START//";
     private const string RequestEndFlag = "//REQUEST END//";
-    private const string RouteToOperatorFlag = "//OPERATOR//";
-    private const string RouteToEmployeesFlag = "//EMPLOYEES//";
-    private const string RouteToSchedulesFlag = "//SCHEDULES//";
+    // private const string RouteToOperatorFlag = "//OPERATOR//";
+    // private const string RouteToEmployeesFlag = "//EMPLOYEES//";
+    // private const string RouteToSchedulesFlag = "//SCHEDULES//";
     
     private readonly IChatGptClient _chatGptClient;
     private readonly IManagerSupportGptSessionRepository _sessionRepository;
@@ -31,7 +31,7 @@ public class ManagerSupportServices : IManagerSupportServices
     private readonly ITwilioServices _twilioServices;
     private readonly UserManager<IdentityUser> _userManager;
 
-    public ManagerSupportServices(IManagerSupportGptSessionRepository sessionRepository, IGptRequestParser requestParser, IGptRequestHandler requestHandler, IChatGptClient chatGptClient, IConfiguration configuration, ITwilioServices twilioServices, UserManager<IdentityUser> userManager)
+    public ManagerSupportServices(IManagerSupportGptSessionRepository sessionRepository, IGptRequestParser requestParser, IChatGptClient chatGptClient, IConfiguration configuration, ITwilioServices twilioServices, UserManager<IdentityUser> userManager, IRequestDispatcher requestDispatcher)
     {
         _sessionRepository = sessionRepository;
         _requestParser = requestParser;
@@ -62,7 +62,7 @@ public class ManagerSupportServices : IManagerSupportServices
             // Create a session thread
             session = new ManagerSupportGptSession
             {
-                CurrentAssistantId = _managerSupportAssistants["SupportOperator"]!,
+                CurrentAssistantId = _managerSupportAssistants["ManagerAssistant"]!,
                 State = GptSessionState.Created,
                 ThreadId = threadId,
                 Employee = manager
@@ -137,45 +137,45 @@ public class ManagerSupportServices : IManagerSupportServices
         }
 
         // Identify route triggers
-        var routeTriggered = false;
-        var newAssistantParamName = "";
-        var routeTriggerPriorMessage = "";
-        
-        if (latestMessage.Content.Contains(RouteToOperatorFlag))
-        {
-            routeTriggered = true;
-            newAssistantParamName = "SupportOperator";
-            routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToOperatorFlag);
-        }
-        
-        else if (latestMessage.Content.Contains(RouteToEmployeesFlag))
-        {
-            routeTriggered = true;
-            newAssistantParamName = "EmployeeManagement";
-            routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToEmployeesFlag);
-        }
-        
-        else if (latestMessage.Content.Contains(RouteToSchedulesFlag))
-        {
-            routeTriggered = true;
-            newAssistantParamName = "ScheduleManagement";
-            routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToSchedulesFlag);
-        }
-
-        if (routeTriggered)
-        {
-            // Send Prior Message to Manager
-            await SendManagerAMessage(manager, routeTriggerPriorMessage);
-            
-            // Update Assistant in Session
-            session.CurrentAssistantId = _managerSupportAssistants[newAssistantParamName]!;
-            await _sessionRepository.UpdateAsync(session);
-            
-            // Run GPT again
-            await RunAndProcess(session, manager);
-
-            return;
-        }
+        // var routeTriggered = false;
+        // var newAssistantParamName = "";
+        // var routeTriggerPriorMessage = "";
+        //
+        // if (latestMessage.Content.Contains(RouteToOperatorFlag))
+        // {
+        //     routeTriggered = true;
+        //     newAssistantParamName = "SupportOperator";
+        //     routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToOperatorFlag);
+        // }
+        //
+        // else if (latestMessage.Content.Contains(RouteToEmployeesFlag))
+        // {
+        //     routeTriggered = true;
+        //     newAssistantParamName = "EmployeeManagement";
+        //     routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToEmployeesFlag);
+        // }
+        //
+        // else if (latestMessage.Content.Contains(RouteToSchedulesFlag))
+        // {
+        //     routeTriggered = true;
+        //     newAssistantParamName = "ScheduleManagement";
+        //     routeTriggerPriorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RouteToSchedulesFlag);
+        // }
+        //
+        // if (routeTriggered)
+        // {
+        //     // Send Prior Message to Manager
+        //     await SendManagerAMessage(manager, routeTriggerPriorMessage);
+        //     
+        //     // Update Assistant in Session
+        //     session.CurrentAssistantId = _managerSupportAssistants[newAssistantParamName]!;
+        //     await _sessionRepository.UpdateAsync(session);
+        //     
+        //     // Run GPT again
+        //     await RunAndProcess(session, manager);
+        //
+        //     return;
+        // }
         
         // Send latest message back to the manager
         await SendManagerAMessage(manager, latestMessage.Content);

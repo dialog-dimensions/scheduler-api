@@ -38,7 +38,7 @@ public class GathererServices : IGathererServices
         _exceptionRepository = exceptionRepository;
         _chatGptClient = chatGptClient;
         _twilioServices = twilioServices;
-        AssistantId = configuration["ChatGPT:AssistantId"]!;
+        AssistantId = configuration["ChatGPT:Assistants:Gatherer"]!;
     }
     
     public async Task<string> CreateSession((string, DateTime) scheduleKey, int employeeId, Dictionary<string, string>? otherInstructions = null)
@@ -59,7 +59,7 @@ public class GathererServices : IGathererServices
         var user = await _userManager.FindByIdAsync(employeeId.ToString());
         if (user is null)
         {
-            throw new KeyNotFoundException("unable to retrieve user.");
+            return "";
         }
         
         // Create GPT Thread
@@ -71,7 +71,8 @@ public class GathererServices : IGathererServices
             ThreadId = threadId,
             Schedule = schedule,
             Employee = employee,
-            ConversationState = ShabtzanGptConversationState.Created
+            ConversationState = ShabtzanGptConversationState.Created,
+            CurrentAssistantId = AssistantId
         });
         
         // Generate the Initial Instructions Message and Process It Without Replying the User
