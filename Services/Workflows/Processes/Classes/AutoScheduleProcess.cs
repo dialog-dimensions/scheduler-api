@@ -19,8 +19,12 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
     public DateTime PublishDateTime { get; private set; }
     
     
-    // SCHEDULE ATTRIBUTES
+    // NEXT PHASE JOB
+    public string NextPhaseJobId { get; set; } = "";
 
+
+    // SCHEDULE ATTRIBUTES
+    
     private Desk _desk;
 
     public Desk Desk
@@ -72,12 +76,19 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         SaveChangesPending = true;
     }
 
+    protected void HandleNextPhaseJobIdCaptured(object source, NextPhaseJobIdCapturedEventArgs e)
+    {
+        NextPhaseJobId = e.JobId; 
+        SaveChangesPending = true;
+    }
+
     protected sealed override void Initialize(IStrategy strategy)
     {
         if (strategy is IAutoScheduleStrategy autoScheduleStrategy)
         {
             autoScheduleStrategy.ProcessId = Id;
             autoScheduleStrategy.TimelineCaptured += HandleTimelineCaptured;
+            autoScheduleStrategy.JobIdCaptured += HandleNextPhaseJobIdCaptured;
         }
         
         base.Initialize(strategy);
@@ -101,7 +112,7 @@ public class AutoScheduleProcess : Process, IAutoScheduleProcess
         ScheduleStart = startDateTime;
         ScheduleEnd = endDateTime;
         ScheduleShiftDuration = shiftDuration;
-
+        
         var key = await AutoRepository.CreateAsync(this);
         Strategy!.ProcessId = Id;
         

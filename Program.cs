@@ -37,6 +37,7 @@ using SchedulerApi.Services.Storage.BlobStorageServices;
 using SchedulerApi.Services.Storage.HtmlStorageServices;
 using SchedulerApi.Services.Storage.ImageStorageServices;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
+using SchedulerApi.Services.Workflows.Jobs;
 using SchedulerApi.Services.Workflows.Procedures;
 using SchedulerApi.Services.Workflows.Processes.Classes;
 using SchedulerApi.Services.Workflows.Processes.Factories.Classes;

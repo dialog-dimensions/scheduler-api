@@ -117,10 +117,13 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
         }
         
         // Create a Delayed Job for Commiting and Publishing the Schedule (This is the Approval Window)
-        backgroundJobClient.Schedule<GptProcessAfterApprovalJob>(
+        var jobId = backgroundJobClient.Schedule<GptProcessAfterApprovalJob>(
             job => job.Execute(processId),
             process.PublishDateTime.Subtract(DateTime.Now)
-        );
+        )!;
+
+        process.NextPhaseJobId = jobId;
+        await processRepository.UpdateAsync(process);
     }
 
     public async Task AfterApprovalAsync(int processId)
@@ -181,5 +184,9 @@ public class GptScheduleProcessProcedures : IGptScheduleProcessProcedures
             await twilio.TriggerPublishShiftsMediaFlow(phoneNumber, userName, schedule, employee);
             await Task.Delay(messageCooldown);
         }
+        
+        // Update Process and remove jobId
+        process.NextPhaseJobId = "";
+        await processRepository.UpdateAsync(process);
     }
 }

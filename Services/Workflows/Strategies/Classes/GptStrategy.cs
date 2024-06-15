@@ -43,7 +43,8 @@ public sealed class GptStrategy : Strategy, IGptStrategy
 
     public delegate void TimelineCapturedEventHandler(object source, TimelineCapturedEventArgs e);
     public event IAutoScheduleStrategy.TimelineCapturedEventHandler? TimelineCaptured;
-    
+    public event IAutoScheduleStrategy.NextPhaseJobIdCapturedEventHandler? JobIdCaptured;
+
     public GptStrategy(
         IScheduleRepository scheduleRepository,
         // IEmployeeRepository employeeRepository,
@@ -152,10 +153,20 @@ public sealed class GptStrategy : Strategy, IGptStrategy
 
     private void ScheduleNextPhase()
     {
-        _backgroundJobClient.Schedule<GptProcessAfterGatheringJob>(
+        var jobId = _backgroundJobClient.Schedule<GptProcessAfterGatheringJob>(
             job => job.Execute(ProcessId),
             FileWindowEnd.Subtract(DateTime.Now)
-        );
+        )!;
+
+        OnNextPhaseScheduled(jobId);
+    }
+
+    private void OnNextPhaseScheduled(string jobId)
+    {
+        JobIdCaptured?.Invoke(this, new NextPhaseJobIdCapturedEventArgs
+        {
+            JobId = jobId
+        });
     }
 
     private async Task ScheduleNextPhaseAsync(object[] parameters)

@@ -20,6 +20,7 @@ public class GptScheduleProcess : AutoScheduleProcess, IGptScheduleProcess
     {
         strategy.ProcessId = Id;
         strategy.TimelineCaptured += HandleTimelineCaptured;
+        strategy.JobIdCaptured += HandleNextPhaseJobIdCaptured;
         base.Initialize(strategy);
     }
 }
