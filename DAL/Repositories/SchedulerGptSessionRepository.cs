@@ -59,17 +59,6 @@ public class SchedulerGptSessionRepository : Repository<GathererGptSession>, ISc
         return await Context.SchedulerGptSessions.ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var entity = await ReadAsync(key);
-        if (entity is null)
-        {
-            return;
-        }
-
-        await DeleteAsync(entity);
-    }
-
     public override async Task DeleteAsync(GathererGptSession entity)
     {
         Context.SchedulerGptSessions.Remove(entity);

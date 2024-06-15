@@ -35,17 +35,6 @@ public class ManagerSupportGptSessionRepository : Repository<ManagerSupportGptSe
         return await Context.ManagerSupportGptSessions.ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var entity = await ReadAsync(key);
-        if (entity is null)
-        {
-            return;
-        }
-
-        await DeleteAsync(entity);
-    }
-
     public override async Task DeleteAsync(ManagerSupportGptSession entity)
     {
         Context.ManagerSupportGptSessions.Remove(entity);
@@ -53,11 +42,6 @@ public class ManagerSupportGptSessionRepository : Repository<ManagerSupportGptSe
     }
 
 
-            return new[] { process };
-        }
-        
-        return new ManagerSupportGptSession[] { };  
-    }
 
     public override async Task UpdateAsync(ManagerSupportGptSession entity)
     {

@@ -54,23 +54,6 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
             .ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        if (key is not (string deskId, DateTime shiftStart, int employeeId))
-        {
-            throw new ArgumentException("composite key is not of expected type.");
-        }
-
-        var entity = await Context.Exceptions.FindAsync(deskId, shiftStart, employeeId);
-        if (entity is null)
-        {
-            return;
-        }
-
-        Context.Exceptions.Remove(entity);
-        await Context.SaveChangesAsync();
-    }
-
     public override async Task DeleteAsync(ShiftException entity)
     {
         if (!Context.Exceptions.Contains(entity))
@@ -83,28 +66,6 @@ public class ShiftExceptionRepository : Repository<ShiftException>, IShiftExcept
     }
 
 
-        var matches = Context.Exceptions.AsQueryable();
-
-        if (hasShiftStartDateTime)
-        {
-            var shiftStartDateTime = Convert.ToDateTime(shiftStartDateTimeValue);
-            matches = matches.Where(ex => ex.ShiftStartDateTime == shiftStartDateTime);
-        }
-
-        if (hasDeskId)
-        {
-            var deskId = Convert.ToString(deskIdValue);
-            matches = matches.Where(ex => ex.DeskId == deskId);
-        }
-
-        if (hasEmployeeId)
-        {
-            var employeeId = Convert.ToInt32(employeeIdValue);
-            matches = matches.Where(ex => ex.EmployeeId == employeeId);
-        }
-
-        return await matches.ToListAsync();
-    }
 
     public async Task<IEnumerable<ShiftException>> WhereAsync(string deskId, DateTime shiftStartDateTime)
     {

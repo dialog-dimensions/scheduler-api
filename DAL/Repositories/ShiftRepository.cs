@@ -43,11 +43,6 @@ public class ShiftRepository : Repository<Shift>, IShiftRepository
             .ToListAsync();
     }
 
-    public override Task DeleteAsync(object key)
-    {
-        throw new NotImplementedException();
-    }
-
     public override Task DeleteAsync(Shift entity)
     {
         throw new NotImplementedException();

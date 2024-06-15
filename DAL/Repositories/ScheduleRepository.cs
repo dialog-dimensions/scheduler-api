@@ -274,26 +274,10 @@ public class ScheduleRepository : Repository<Schedule>, IScheduleRepository
     //     return faultyShifts;
     // }
 
-    public override Task DeleteAsync(object key)
-    {
-        throw new NotImplementedException();
-    }
-
     public override Task DeleteAsync(Schedule entity)
     {
         throw new NotImplementedException();
     }
 
 
-        if (hasScheduleStartDateTime)
-        {
-            var scheduleStartDateTime = Convert.ToDateTime(scheduleStartDateTimeValue);
-            matchShifts = matchShifts.Where(shift => shift.ScheduleStartDateTime == scheduleStartDateTime);
-        }
-
-        var shiftGroups = matchShifts
-            .GroupBy(shift => new { shift.DeskId, shift.ScheduleStartDateTime });
-
-        return shiftGroups.Select(group => new ScheduleFactory().FromShifts(group)!);
-    }
 }

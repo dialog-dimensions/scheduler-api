@@ -1,9 +1,10 @@
-﻿using SchedulerApi.DAL.Repositories.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.Interfaces;
 
 namespace SchedulerApi.DAL.Repositories.BaseClasses;
 
-public abstract class Repository<T> : IRepository<T> where T : IKeyProvider
+public abstract class Repository<T> : IRepository<T> where T : class, IKeyProvider
 {
     protected readonly ApiDbContext Context;
 
@@ -12,21 +13,53 @@ public abstract class Repository<T> : IRepository<T> where T : IKeyProvider
         Context = context;
     }
 
-    public abstract Task<object> CreateAsync(T entity);
-    public abstract Task<T?> ReadAsync(object key);
-    public abstract Task<IEnumerable<T>> ReadAllAsync();
-    
-    public virtual Task UpdateAsync(T entity)
+    public virtual async Task<object> CreateAsync(T entity)
     {
-        throw new NotImplementedException();
+        var set = Context.Set<T>();
+        var entityEntry = set.Add(entity); 
+        await Context.SaveChangesAsync();
+        return entityEntry.Entity.Key;
     }
     
-    public abstract Task DeleteAsync(object key);
-    public abstract Task DeleteAsync(T entity);
-    public abstract Task<IEnumerable<T>> Query(Dictionary<string, object> parameters, string prefixDiscriminator = "");
-    public async Task<T?> TryFind(Dictionary<string, object> parameters, string prefixDiscriminator = "")
+    public virtual async Task<T?> ReadAsync(object?[]? keys)
     {
-        var matches = (await Query(parameters, prefixDiscriminator)).ToList();
-        return matches.Count == 1 ? matches[0] : default;
+        var set = Context.Set<T>(); 
+        return await set.FindAsync(keys);
+    }
+
+    public virtual async Task<T?> ReadAsync(object key)
+    {
+        var set = Context.Set<T>();
+        return await set.FindAsync(key);
+    }
+
+    public virtual async Task<IEnumerable<T>> ReadAllAsync()
+    {
+        return await Context.Set<T>().ToListAsync();
+    }
+    
+    public virtual async Task UpdateAsync(T entity)
+    {
+        var set = Context.Set<T>();
+        set.Update(entity);
+        await Context.SaveChangesAsync();
+    }
+
+    public virtual async Task DeleteAsync(object key)
+    {
+        var entity = await ReadAsync(key);
+        if (entity is null)
+        {
+            return;
+        }
+
+        await DeleteAsync(entity);
+    }
+
+    public virtual async Task DeleteAsync(T entity)
+    {
+        var set = Context.Set<T>();
+        set.Remove(entity);
+        await Context.SaveChangesAsync();
     }
 }

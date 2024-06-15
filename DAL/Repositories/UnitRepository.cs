@@ -39,17 +39,6 @@ public class UnitRepository : Repository<Unit>, IUnitRepository
             .ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var obj = await ReadAsync(key);
-        if (obj is null)
-        {
-            throw new KeyNotFoundException("unit not found in database.");
-        }
-
-        await DeleteAsync(obj);
-    }
-
     public override async Task DeleteAsync(Unit entity)
     {
         var desks = await Context.Desks.Where(d => d.UnitId == entity.Id).ToListAsync();

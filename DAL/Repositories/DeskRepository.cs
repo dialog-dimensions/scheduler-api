@@ -43,17 +43,6 @@ public class DeskRepository : Repository<Desk>, IDeskRepository
             .ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var obj = await ReadAsync(key);
-        if (obj is null)
-        {
-            throw new KeyNotFoundException();
-        }
-
-        await DeleteAsync(obj);
-    }
-
     public override async Task DeleteAsync(Desk entity)
     {
         Context.Desks.Remove(entity);
@@ -61,16 +50,6 @@ public class DeskRepository : Repository<Desk>, IDeskRepository
     }
 
 
-        var hasDeskHeadsUpDuration = parameters.TryGetValue($"{prefixDiscriminator}DeskHeadsUpDuration", out var deskHeadsUpDurationValue);
-        if (hasDeskHeadsUpDuration)
-        {
-            var deskHeadsUpDurationString = Convert.ToString(deskHeadsUpDurationValue);
-            var deskHeadsUpDuration = TimeSpan.Parse(deskHeadsUpDurationString!);
-            matches = matches.Where(desk => desk.ProcessParameters.HeadsUpDuration == deskHeadsUpDuration);
-        }
-
-        return await matches.ToListAsync();
-    }
 
     public async Task<IEnumerable<Desk>> ReadAllActiveUnit(Unit unit)
     {

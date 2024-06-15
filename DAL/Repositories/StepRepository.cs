@@ -29,17 +29,6 @@ public class StepRepository : Repository<Step>, IRepository<Step>
         return await Context.Steps.ToListAsync();
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var obj = await ReadAsync(key);
-        if (obj is null)
-        {
-            return;
-        }
-
-        await DeleteAsync(obj);
-    }
-
     public override async Task DeleteAsync(Step entity)
     {
         Context.Steps.Remove(entity);

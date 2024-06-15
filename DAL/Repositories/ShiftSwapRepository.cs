@@ -30,12 +30,6 @@ public class ShiftSwapRepository : Repository<ShiftSwap>, IShiftSwapRepository
         return result;
     }
 
-    public override async Task DeleteAsync(object key)
-    {
-        var entity = await Context.Swaps.FirstOrDefaultAsync(swap => swap.Key.Equals(key));
-        await DeleteAsync(entity ?? throw new KeyNotFoundException("Swap not found in database."));
-    }
-
     public override async Task DeleteAsync(ShiftSwap entity)
     {
         if (!Context.Swaps.Contains(entity))
