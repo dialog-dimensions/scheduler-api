@@ -8,23 +8,20 @@ namespace SchedulerApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SchedulerGptSessionController : Controller
+public class GptSessionController : Controller
 {
     private readonly IGathererServices _gathererService;
     private readonly IChatGptClient _gptClient;
 
-    public SchedulerGptSessionController(
-        IGathererServices gathererService, 
-        ISchedulerGptSessionRepository sessionRepository
-        )
+    public GptSessionController(IGathererServices gathererService, IChatGptClient gptClient)
     {
         _gathererService = gathererService;
         _gptClient = gptClient;
     }
     
-    [HttpPost("create-session")]
+    [HttpPost("create-gathering-session")]
     [Authorize]
-    public async Task<ActionResult<string>> CreateSessionAsync(
+    public async Task<ActionResult<string>> CreateGatheringSessionAsync(
         string deskId,
         DateTime scheduleStartDateTime, 
         int employeeId, 
