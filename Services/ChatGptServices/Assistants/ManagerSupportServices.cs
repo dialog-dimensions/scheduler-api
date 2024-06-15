@@ -4,12 +4,12 @@ using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Enums;
 using SchedulerApi.Models.ChatGPT;
 using SchedulerApi.Models.ChatGPT.Responses;
-using SchedulerApi.Models.ChatGPT.Responses.BaseClasses;
+using SchedulerApi.Models.ChatGPT.Responses.Interfaces;
 using SchedulerApi.Models.ChatGPT.Sessions;
 using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
-using SchedulerApi.Services.ChatGptServices.RequestHandlers;
-using SchedulerApi.Services.ChatGptServices.RequestParser;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.RequestDispatching;
+using SchedulerApi.Services.ChatGptServices.RequestParsing;
 using SchedulerApi.Services.ChatGptServices.Utils;
 using SchedulerApi.Services.WhatsAppClient.Twilio;
 
@@ -26,7 +26,7 @@ public class ManagerSupportServices : IManagerSupportServices
     private readonly IChatGptClient _chatGptClient;
     private readonly IManagerSupportGptSessionRepository _sessionRepository;
     private readonly IGptRequestParser _requestParser;
-    private readonly IGptRequestHandler _requestHandler;
+    private readonly IRequestDispatcher _requestDispatcher;
     private readonly IConfigurationSection _managerSupportAssistants;
     private readonly ITwilioServices _twilioServices;
     private readonly UserManager<IdentityUser> _userManager;
@@ -35,10 +35,10 @@ public class ManagerSupportServices : IManagerSupportServices
     {
         _sessionRepository = sessionRepository;
         _requestParser = requestParser;
-        _requestHandler = requestHandler;
         _chatGptClient = chatGptClient;
         _twilioServices = twilioServices;
         _userManager = userManager;
+        _requestDispatcher = requestDispatcher;
         _managerSupportAssistants = configuration.GetSection("ChatGPT:Assistants:ManagerSupport"); // TODO: check if this is not fucked up in prod.
     }
 
@@ -217,7 +217,7 @@ public class ManagerSupportServices : IManagerSupportServices
             var request = _requestParser.ParseRequest(requestString);
 
             // Execute request and receive response
-            return await _requestHandler.HandleRequest(request);
+            return await _requestDispatcher.HandleRequest(request);
         }
         catch (Exception ex)
         {

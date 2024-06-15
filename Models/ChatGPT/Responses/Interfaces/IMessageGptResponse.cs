@@ -1,4 +1,4 @@
-﻿namespace SchedulerApi.Models.ChatGPT.Responses.BaseClasses;
+﻿namespace SchedulerApi.Models.ChatGPT.Responses.Interfaces;
 
 public interface IMessageGptResponse : IGptResponse
 {

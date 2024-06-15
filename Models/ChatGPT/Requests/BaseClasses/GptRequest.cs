@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using SchedulerApi.Enums;
+using SchedulerApi.Models.ChatGPT.Requests.Interfaces;
 
 namespace SchedulerApi.Models.ChatGPT.Requests.BaseClasses;
 

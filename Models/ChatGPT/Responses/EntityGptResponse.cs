@@ -1,19 +1,23 @@
 ﻿using SchedulerApi.Models.ChatGPT.Responses.BaseClasses;
-using SchedulerApi.Models.DTOs.Interfaces;
-using SchedulerApi.Models.Interfaces;
+using SchedulerApi.Models.ChatGPT.Responses.Interfaces;
 
 namespace SchedulerApi.Models.ChatGPT.Responses;
 
-public class EntityGptResponse<T, TDto> : GptResponse, IEntityGptResponse<T, TDto> where T : IKeyProvider where TDto : IDto<T, TDto>
+public class EntityGptResponse : GptResponse, IEntityGptResponse
 {
-    private TDto _entity;
-    public TDto Entity
+    public object? Entity
     {
-        get => _entity;
-        set
-        {
-            _entity = value;
-            Content = value;
-        }
+        set => Content = value;
     }
+
+    public static IEntityGptResponse Ok(object? entity) => new EntityGptResponse
+    {
+        StatusCode = "200",
+        Entity = entity
+    };
+
+    public static IEntityGptResponse NoContent() => new EntityGptResponse
+    {
+        StatusCode = "204"
+    };
 }

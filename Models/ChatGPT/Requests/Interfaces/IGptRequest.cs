@@ -1,6 +1,6 @@
 ﻿using SchedulerApi.Enums;
 
-namespace SchedulerApi.Models.ChatGPT.Requests.BaseClasses;
+namespace SchedulerApi.Models.ChatGPT.Requests.Interfaces;
 
 public interface IGptRequest
 {

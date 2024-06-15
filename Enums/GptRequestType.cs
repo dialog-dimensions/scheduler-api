@@ -3,18 +3,29 @@
 public enum GptRequestType
 {
     CreateEmployee,
-    CreateDeskAssignment,
-    CreateShiftException,
     ReadEmployee,
-    ReadDeskAssignment,
-    ReadSchedule,
+    ReadEmployees,
     ReadShift,
+    ReadShifts,
+    AssignShiftEmployee,
+    ReadSchedule,
+    ReadSchedules,
+    CreateShiftException,
     ReadShiftException,
-    GetScheduleShiftExceptions,
-    PatchEmployee,
-    AssignShift,
-    SwapShifts,
-    PatchShiftException,
+    ReadShiftExceptions,
+    ReadDesk,
+    ReadDesks,
+    CreateDeskAssignment,
+    ReadDeskAssignment,
+    ReadDeskAssignments,
     DeleteDeskAssignment,
-    DeleteShiftException
+    ReadUnit,
+    ReadUnits,
+    ReadAutoProcess,
+    AdvanceAutoProcess,
+    StartGptProcess,
+    PauseAutoProcess,
+    RescheduleAutoProcessNextPhase
+    // SwapShiftEmployees 
+    // ReadAutoProcesses
 }

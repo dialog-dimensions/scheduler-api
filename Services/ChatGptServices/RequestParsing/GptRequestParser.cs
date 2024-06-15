@@ -1,7 +1,8 @@
 ﻿using Newtonsoft.Json;
 using SchedulerApi.Models.ChatGPT.Requests.BaseClasses;
+using SchedulerApi.Models.ChatGPT.Requests.Interfaces;
 
-namespace SchedulerApi.Services.ChatGptServices.RequestParser;
+namespace SchedulerApi.Services.ChatGptServices.RequestParsing;
 
 public class GptRequestParser : IGptRequestParser
 {

@@ -24,8 +24,17 @@ using SchedulerApi.Services.ApiFlashClient;
 using SchedulerApi.Services.ChatGptServices;
 using SchedulerApi.Services.ChatGptServices.Assistants;
 using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
-using SchedulerApi.Services.ChatGptServices.RequestHandlers;
-using SchedulerApi.Services.ChatGptServices.RequestParser;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.CommandRegistry;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.DeskAssignmentCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.DeskCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.EmployeeCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.ProcessCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.ScheduleCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.ShiftCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.ShiftExceptionCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.GptCommands.UnitCommands;
+using SchedulerApi.Services.ChatGptServices.RequestHandling.RequestDispatching;
+using SchedulerApi.Services.ChatGptServices.RequestParsing;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleHtmlServices;
 using SchedulerApi.Services.ImageGenerationServices.ScheduleImageServices;
 using SchedulerApi.Services.JWT;
@@ -264,6 +273,7 @@ builder.Services.AddTransient<IStep, Step>();
 Console.WriteLine("Adding Job Services.");
 // Job Services
 builder.Services.AddScoped<IGptScheduleProcessProcedures, GptScheduleProcessProcedures>();
+builder.Services.AddTransient<IAutoScheduleProcessJobServices, AutoScheduleProcessJobServices>();
 
 Console.WriteLine("Adding DB Context Services.");
 // EF Core

@@ -29,12 +29,13 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Models\ChatGPT\Requests\ScheduleRequests\" />
       <Folder Include="Models\DTOs\DataStructures\Tree\" />
     </ItemGroup>
 
     <ItemGroup>
       <Compile Remove="Services\ImageGenerationServices\ScheduleHtmlServices\NewTmp.cs" />
+      <Compile Remove="Services\ChatGptServices\RequestHandling\GptRequestHandler.cs" />
+      <Compile Remove="Services\ChatGptServices\RequestHandling\IGptRequestHandler.cs" />
     </ItemGroup>
 
 </Project>

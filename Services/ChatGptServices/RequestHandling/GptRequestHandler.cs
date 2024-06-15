@@ -1,9 +1,9 @@
 ﻿using System.Text;
 using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Enums;
-using SchedulerApi.Models.ChatGPT.Requests.BaseClasses;
+using SchedulerApi.Models.ChatGPT.Requests.Interfaces;
 using SchedulerApi.Models.ChatGPT.Responses;
-using SchedulerApi.Models.ChatGPT.Responses.BaseClasses;
+using SchedulerApi.Models.ChatGPT.Responses.Interfaces;
 using SchedulerApi.Models.DTOs.ChatGpt.EmployeeManagementAssistant;
 using SchedulerApi.Models.DTOs.ChatGpt.ScheduleManagementAssistant;
 using SchedulerApi.Models.Entities;
@@ -11,7 +11,7 @@ using SchedulerApi.Models.Entities.Workers;
 using SchedulerApi.Models.Organization;
 using SchedulerApi.Models.ScheduleEngine;
 
-namespace SchedulerApi.Services.ChatGptServices.RequestHandlers;
+namespace SchedulerApi.Services.ChatGptServices.RequestHandling;
 
 public class GptRequestHandler : IGptRequestHandler
 {
@@ -29,56 +29,6 @@ public class GptRequestHandler : IGptRequestHandler
         _deskRepository = deskRepository;
         _unitRepository = unitRepository;
     }
-
-    private static IMessageGptResponse SuccessGptResponse(string message = "Success") => new MessageGptResponse
-    {
-        StatusCode = "200",
-        ResponseMessage = message
-    };
-    
-    private IMessageGptResponse MissingParameterGptResponse(string parameterName) => new MessageGptResponse
-    {
-        StatusCode = "400",
-        ResponseMessage = $"Missing {parameterName} parameter in request body."
-    };
-
-    private IMessageGptResponse InvalidParameterTypeGptResponse(string parameterName, Type requiredType,
-        Type givenType) => new MessageGptResponse
-    {
-        StatusCode = "400",
-        ResponseMessage = $"Invalid {parameterName} type. Required {requiredType.Name}, given {givenType.Name}."
-    };
-
-    private IMessageGptResponse InvalidParameterValueGptResponse(string parameterName, object givenValue,
-        object? expectedValue = null)
-    {
-        var responseMessage = new StringBuilder();
-        
-        responseMessage.Append($"Invalid {parameterName} value.");
-        if (expectedValue is not null)
-        {
-            responseMessage.Append($" Expected {expectedValue}.");
-        }
-        responseMessage.Append($" Given {givenValue}.");
-        
-        return new MessageGptResponse
-        {
-            StatusCode = "400",
-            ResponseMessage = responseMessage.ToString()
-        };
-    }
-
-    private IMessageGptResponse NotFoundGptResponse(string parameterName, object value, Type type) => new MessageGptResponse
-    {
-        StatusCode = "404",
-        ResponseMessage = $"Invalid {parameterName}. {type.Name} '{value}' not found in database."
-    };
-    
-    private IMessageGptResponse ConflictGptResponse(string parameterName, object value, Type type) => new MessageGptResponse
-    {
-        StatusCode = "409",
-        ResponseMessage = $"Conflicting {parameterName}. More than one {type.Name} records with '{value}' found in database."
-    };
     
     public async Task<IGptResponse> HandleRequest(IGptRequest request)
     {
@@ -109,7 +59,7 @@ public class GptRequestHandler : IGptRequestHandler
 
     private async Task<IGptResponse> HandleUnrecognizedRequestType(Dictionary<string, object> arg)
     {
-        return new MessageGptResponse { StatusCode = "404", ResponseMessage = "Request type not recognized." };
+        return MessageGptResponse.NotFound("Request type");
     }
     
     private async Task<IGptResponse> HandleReadScheduleRequestAsync(Dictionary<string, object> arg)
@@ -371,8 +321,7 @@ public class GptRequestHandler : IGptRequestHandler
         {
             ("Id", typeof(int)),
             ("Name", typeof(string)),
-            ("Role", typeof(string)),
-            ("UnitId", typeof(string))
+            ("Role", typeof(string))
         };
 
         var validationResponse = ValidateFields(requiredFields, parameters);
@@ -381,14 +330,42 @@ public class GptRequestHandler : IGptRequestHandler
             return validationResponse;
         }
 
+        if (!parameters.ContainsKey("UnitId") && !parameters.ContainsKey("UnitName"))
+        {
+            return MissingParameterGptResponse("Unit ID or Unit Name");
+        }
+        
         try
         {
             var id = (int)parameters["Id"];
             var name = (string)parameters["Name"];
             var role = (string)parameters["Role"];
-            var unitId = (string)parameters["UnitId"];
+            Unit? unit = null;
+            
+            if (parameters.ContainsKey("UnitId"))
+            {
+                var unitId = (string)parameters["UnitId"];
+                unit = await _unitRepository.ReadAsync(unitId);
+            }
 
-            var unit = await _unitRepository.ReadAsync(unitId);
+            else
+            {
+                var unitName = (string)parameters["UnitName"];
+                var matchingUnits = (await _unitRepository.FindByNameAsync(unitName)).ToList();
+                if (matchingUnits.Count == 0)
+                {
+                    return NotFoundGptResponse("unitName", unitName, typeof(Unit));
+                }
+
+                if (matchingUnits.Count > 1)
+                {
+                    return ConflictGptResponse("unitName", unitName, typeof(Unit));
+                }
+
+                unit = matchingUnits[0];
+            }
+            
+            
             if (unit is null)
             {
                 return NotFoundGptResponse("UnitID", unitId, typeof(Unit));
