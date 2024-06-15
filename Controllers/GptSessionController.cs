@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SchedulerApi.DAL.Repositories.Interfaces;
 using SchedulerApi.Models.ChatGPT;
+using SchedulerApi.Services.ChatGptServices;
 using SchedulerApi.Services.ChatGptServices.Assistants.Interfaces;
 
 namespace SchedulerApi.Controllers;
@@ -11,7 +11,7 @@ namespace SchedulerApi.Controllers;
 public class SchedulerGptSessionController : Controller
 {
     private readonly IGathererServices _gathererService;
-    private readonly ISchedulerGptSessionRepository _sessionRepository;
+    private readonly IChatGptClient _gptClient;
 
     public SchedulerGptSessionController(
         IGathererServices gathererService, 
@@ -19,7 +19,7 @@ public class SchedulerGptSessionController : Controller
         )
     {
         _gathererService = gathererService;
-        _sessionRepository = sessionRepository;
+        _gptClient = gptClient;
     }
     
     [HttpPost("create-session")]
@@ -49,12 +49,7 @@ public class SchedulerGptSessionController : Controller
     [Authorize]
     public async Task<ActionResult<IEnumerable<Message>>?> GetMessagesAsync(string threadId)
     {
-        var session = await _sessionRepository.ReadAsync(threadId);
-        if (session is null)
-        {
-            return null;
-        }
-        
-        return session.Messages.ToList();
+        var messages = await _gptClient.ThreadListMessagesAsync(threadId);
+        return messages.ToList();
     }
 }
