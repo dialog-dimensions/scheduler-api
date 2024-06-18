@@ -55,10 +55,11 @@ public class StartGptProcessCommand : IGptCommand
             return Problem("an unhandled exception was thrown during parameter extraction. see details. " + ex.Message);
         }
 
+        int processId;
         try
         {
             var process = _serviceProvider.GetRequiredService<IGptScheduleProcess>();
-            await process.Run(deskId, startDateTime, endDateTime, shiftDuration);
+            processId = await process.Run(deskId, startDateTime, endDateTime, scheduleShiftDuration);
         }
         catch (Exception ex)
         {
@@ -66,7 +67,7 @@ public class StartGptProcessCommand : IGptCommand
                            ex.Message);
         }
 
-        return Ok();
+        return Ok(new { ProcessId = processId });
     }
 
     private async Task<IGptResponse> ValidateProcessParameters(Dictionary<string, object> parameters)
@@ -125,7 +126,7 @@ public class StartGptProcessCommand : IGptCommand
         // Shift Duration
         var validatedShiftDuration = ValidateProcessParameter<int>(
             parameters,
-            "ShiftDuration",
+            "ScheduleShiftDuration",
             out var shiftDurationValidationResponse,
             nullable: havePreviousSchedule
         );
@@ -144,7 +145,7 @@ public class StartGptProcessCommand : IGptCommand
             { "DeskId", desk.Id },
             { "ScheduleStartDateTime", scheduleStartDateTime },
             { "ScheduleEndDateTime", scheduleEndDateTime },
-            { "ShiftDuration", shiftDuration }
+            { "ScheduleShiftDuration", shiftDuration }
         };
 
         return Ok(processParameters);
