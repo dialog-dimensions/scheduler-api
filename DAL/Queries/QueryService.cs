@@ -63,7 +63,7 @@ public class QueryService : IQueryService
 
     private async Task<IEnumerable<T>> TryFind<T>(object key) where T : class, IKeyProvider
     {
-        return await _context.Set<T>().Where(obj => obj.Key.Equals(key)).ToListAsync();
+        return (await _context.Set<T>().ToListAsync()).Where(obj => obj.Key.Equals(key));
     }
 
     public async Task<IEnumerable<IKeyProvider>> Query(Type type, Dictionary<string, object> parameters)
