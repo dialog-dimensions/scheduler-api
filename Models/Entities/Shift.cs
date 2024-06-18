@@ -33,10 +33,24 @@ public class Shift : IMyQueryable
         get => _employee;
         set
         {
-            if (value is null && _employee is null) return;
-            if (_employee?.Equals(value) ?? false) return;
+            if (value is null)
+            {
+                if (_employee is not null)
+                {
+                    _employee = null;
+                    EmployeeId = 0;
+                }
+
+                return;
+            }
+
+            if (_employee?.Equals(value) ?? false)
+            {
+                return;
+            }
+            
             _employee = value;
-            EmployeeId = _employee?.Id ?? 0;
+            EmployeeId = value.Id;
         }
     }
     public int? EmployeeId { get; private set; }
