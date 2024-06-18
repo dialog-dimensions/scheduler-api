@@ -46,6 +46,8 @@ public static class ValidationUtils
             response = nullable ? 
                 NoContent() : 
                 MissingRequiredParameters(requestType, new[] { paramName });
+
+            return nullable;
         }
         
         // Handle Null Values
@@ -54,6 +56,8 @@ public static class ValidationUtils
             response = nullable ? 
                 NoContent() : 
                 InvalidParameterType(requestType, paramName, typeof(T), null);
+
+            return nullable;
         }
         
         T param;
