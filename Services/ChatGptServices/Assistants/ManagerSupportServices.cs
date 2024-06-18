@@ -22,6 +22,17 @@ public class ManagerSupportServices : IManagerSupportServices
     // private const string RouteToOperatorFlag = "//OPERATOR//";
     // private const string RouteToEmployeesFlag = "//EMPLOYEES//";
     // private const string RouteToSchedulesFlag = "//SCHEDULES//";
+    private const int MaxRecursionCount = 5;
+    private const string MaxRecursionMessage =
+        "System notification: You have reached the auto-retry limit. " +
+        "Please stop sending more requests to the system unprompted and " +
+        "inform the user about the issue you have encountered." +
+        "Wait for further guidence from the user.";
+
+    private const int MaxGetMessageCount = 10;
+    private const string MaxGetMessageMessage = 
+        "Couldn't get a response from the assistant. " +
+        "Please try again later or contact the system administrator.";
     
     private readonly IChatGptClient _chatGptClient;
     private readonly IManagerSupportGptSessionRepository _sessionRepository;
@@ -76,23 +87,23 @@ public class ManagerSupportServices : IManagerSupportServices
         return session;
     }
 
-    private async Task SendRunProcess(ManagerSupportGptSession session, string message, Employee manager)
+    private async Task SendRunProcess(ManagerSupportGptSession session, string message, Employee manager, int recursionCount = 0)
     {
         // Add message to the thread
         await _chatGptClient.AddMessageToThreadAsync(session.ThreadId, message);
 
         // Run and process
-        await RunAndProcess(session, manager);
+        await RunAndProcess(session, manager, recursionCount);
     }
 
-    private async Task RunAndProcess(ManagerSupportGptSession session, Employee manager)
+    private async Task RunAndProcess(ManagerSupportGptSession session, Employee manager, int recursionCount = 0)
     {
         // Run the thread
         await _chatGptClient.RunThreadAsync(session.ThreadId, session.CurrentAssistantId);
 
         // Sample GPT response every 5 seconds for 10 tries
         Message? latestMessage = null;
-        for (var t = 0; t < 10; t++)
+        for (var t = 0; t < MaxGetMessageCount; t++)
         {
             await Task.Delay(5000);
             try
@@ -109,14 +120,20 @@ public class ManagerSupportServices : IManagerSupportServices
         // Unable to get response from GPT within a minute
         if (latestMessage is null)
         {
-            await SendManagerAMessage(manager,
-                "Couldn't get a response from the assistant. Please try again later or contact the system administrator.");
+            await SendManagerAMessage(manager, MaxGetMessageMessage);
             return;
         }
         
         // Identify request triggers
         if (latestMessage.Content.Contains(RequestStartFlag))
         {
+            if (recursionCount == MaxRecursionCount)
+            {
+                // Inform the GPT it has reached the max retry count so it should give up on auto retries
+                await SendRunProcess(session, MaxRecursionMessage, manager);
+                return;
+            }
+            
             // Send user any text generated prior to the request trigger
             var priorMessage = FuncTools.GetSubstringPriorToFlag(latestMessage.Content, RequestStartFlag);
             if (!string.IsNullOrEmpty(priorMessage))
@@ -131,7 +148,7 @@ public class ManagerSupportServices : IManagerSupportServices
             var responseSerialization = JsonConvert.SerializeObject(response);
 
             // Send the message, run the thread and process the outcome.
-            await SendRunProcess(session, responseSerialization, manager);
+            await SendRunProcess(session, responseSerialization, manager, recursionCount + 1);
 
             return;
         }
