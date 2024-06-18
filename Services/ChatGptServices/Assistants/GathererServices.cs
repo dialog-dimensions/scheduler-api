@@ -41,7 +41,7 @@ public class GathererServices : IGathererServices
         AssistantId = configuration["ChatGPT:Assistants:Gatherer"]!;
     }
     
-    public async Task<string> CreateSession((string, DateTime) scheduleKey, int employeeId, Dictionary<string, string>? otherInstructions = null)
+    public async Task<string> CreateSession((string, DateTime) scheduleKey, int employeeId, DateTime fileWindowEnd, Dictionary<string, string>? otherInstructions = null)
     {
         // Get Schedule and Employee Records
         var schedule = await _scheduleRepository.ReadAsync(scheduleKey);
@@ -83,7 +83,7 @@ public class GathererServices : IGathererServices
         return threadId;
     }
 
-    public async Task ProcessIncomingMessage(string threadId, string incomingMessage, bool initialContact = false)
+    public async Task ProcessIncomingMessage(string threadId, string incomingMessage, bool initialContact = false, DateTime fileWindowEnd = new())
     {
         // Add Message to the GPT
         if (!await _chatGptClient.AddMessageToThreadAsync(threadId, incomingMessage))
@@ -141,7 +141,7 @@ public class GathererServices : IGathererServices
                 session.Employee!.Name, 
                 session.Employee!.Gender, 
                 session.Schedule!,
-                DateTime.MaxValue
+                fileWindowEnd
                 );
         }
         else

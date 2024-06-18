@@ -126,7 +126,7 @@ public sealed class GptStrategy : Strategy, IGptStrategy
         var employees = await _deskRepository.GetDeskEmployees(DeskId);
         foreach (var employee in employees)
         {
-            await _gptServices.CreateSession((DeskId, ScheduleStart), employee.Id);
+            await _gptServices.CreateSession((DeskId, ScheduleStart), employee.Id, FileWindowEnd);
         }
     }
 

@@ -24,6 +24,7 @@ public class GptSessionController : Controller
     public async Task<ActionResult<string>> CreateGatheringSessionAsync(
         string deskId,
         DateTime scheduleStartDateTime, 
+        DateTime fileWindowEndDateTime,
         int employeeId, 
         Dictionary<string, string>? otherInstructions = null)
     {
@@ -31,6 +32,7 @@ public class GptSessionController : Controller
             .CreateSession(
                 (deskId, scheduleStartDateTime),
                 employeeId,
+                fileWindowEndDateTime,
                 otherInstructions
             );
     }
