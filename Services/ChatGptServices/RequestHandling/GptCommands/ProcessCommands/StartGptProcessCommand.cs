@@ -37,14 +37,14 @@ public class StartGptProcessCommand : IGptCommand
         string deskId;
         DateTime startDateTime;
         DateTime endDateTime;
-        int shiftDuration;
+        int scheduleShiftDuration;
 
         try
         {
             deskId = (string)processParameters["DeskId"];
             startDateTime = (DateTime)processParameters["ScheduleStartDateTime"];
             endDateTime = (DateTime)processParameters["ScheduleEndDateTime"];
-            shiftDuration = (int)processParameters["ShiftDuration"];
+            scheduleShiftDuration = (int)processParameters["ScheduleShiftDuration"];
         }
         catch (InvalidCastException ex)
         {
